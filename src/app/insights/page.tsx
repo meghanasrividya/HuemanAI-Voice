@@ -18,7 +18,7 @@ import {
 import {
     useAuthStore,
     hasActionsOnlyRole,
-} from "@/stores/authStore";
+} from "@/store/authStore";
 
 import {
     callInsightsApi,

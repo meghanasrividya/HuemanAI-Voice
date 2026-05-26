@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useCallback } from "react";
 import { usePathname } from "next/navigation";
 
 import {
@@ -10,6 +10,7 @@ import {
     Brain,
     ShieldCheck,
     ClipboardList,
+    CalendarDays,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -26,6 +27,11 @@ const navigation = [
         label: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
+    },
+    {
+        label: "Actions",
+        href: "/actions",
+        icon: CalendarDays,
     },
     {
         label: "Reports",
@@ -59,6 +65,12 @@ export default function ProtectedLayout({
                                         }: Props) {
     const pathname = usePathname();
 
+    const handleActionsClick = useCallback(() => {
+        void fetch("/api/actions/hotels", { cache: "no-store" }).catch(() => {
+            // ignore errors; navigation should still happen
+        });
+    }, []);
+
     const { user } = useAuthStore();
 
     return (
@@ -90,6 +102,7 @@ export default function ProtectedLayout({
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    onClick={item.href === "/actions" ? handleActionsClick : undefined}
                                     className={cn(
                                         "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
                                         active
