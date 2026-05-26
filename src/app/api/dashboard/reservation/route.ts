@@ -1,59 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const headers: Record<string, string> = {};
+    const authHeader = req.headers.get("authorization") || "";
 
-    // Forward relevant headers from the client to the backend API
-    request.headers.forEach((value, key) => {
-      const lowerKey = key.toLowerCase();
-      if (
-        lowerKey === "cookie" ||
-        lowerKey === "content-type" ||
-        lowerKey === "authorization" ||
-        lowerKey === "x-csrf-token"
-      ) {
-        headers[key] = value;
+    const csrfToken = req.headers.get("x-csrf-token") || "";
+
+    const response = await axios.post(
+      "https://voice.huemanai.co.uk/api/dashboard/reservation",
+      {},
+      {
+        headers: {
+          Authorization: authHeader,
+          "X-CSRF-TOKEN": csrfToken,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Origin: "https://voice.huemanai.co.uk",
+          Referer: "https://voice.huemanai.co.uk/",
+        },
+        validateStatus: () => true,
       }
-    });
-
-    // Parse the body if any
-    let body = null;
-    try {
-      body = await request.json();
-    } catch (e) {
-      // Empty or invalid body
-    }
-
-    // Call the voice backend API
-    const response = await axios.post("https://voice.huemanai.co.uk/api/dashboard/reservation", body || {}, {
-      headers,
-      validateStatus: () => true, // We want to pass back whatever status the server returns (e.g., 201)
-    });
-
-    // Build the proxy response headers
-    const responseHeaders = new Headers();
-
-    // Forward Set-Cookie headers so cookies can be set/updated in the user's browser
-    if (response.headers["set-cookie"]) {
-      const cookies = response.headers["set-cookie"];
-      if (Array.isArray(cookies)) {
-        cookies.forEach(cookie => responseHeaders.append("Set-Cookie", cookie));
-      } else {
-        responseHeaders.set("Set-Cookie", String(cookies));
-      }
-    }
+    );
 
     return NextResponse.json(response.data, {
       status: response.status,
-      headers: responseHeaders,
     });
   } catch (error: any) {
-    console.error("Error in dashboard reservation API proxy:", error);
+    console.error("Dashboard Proxy Error:", error?.response?.data || error);
+
     return NextResponse.json(
-      { error: "Internal Server Error in API Proxy", details: error.message },
-      { status: 500 }
+      {
+        success: false,
+        message: error?.message || "Proxy Error",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

@@ -63,9 +63,14 @@ export default function LoginPage() {
       );
 
       const data = response.data;
+      console.log("LOGIN RESPONSE =>", data);
       
       if (response.status === 200 || response.status === 201) {
         if (data.access_token && data.user) {
+          localStorage.setItem("access_token", data.access_token);
+          localStorage.setItem("csrf_token", data._csrf || "");
+          localStorage.setItem("user_data", JSON.stringify(data.user));
+
           storeLogin(data.access_token, data.user);
           router.push("/dashboard");
         } else {
