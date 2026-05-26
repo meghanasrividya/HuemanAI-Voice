@@ -3,23 +3,21 @@ import axios from "axios";
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization") || "";
+    const body = await req.json();
 
+    const authHeader = req.headers.get("authorization") || "";
     const csrfToken = req.headers.get("x-csrf-token") || "";
 
     const response = await axios.post(
       "https://voice.huemanai.co.uk/api/dashboard/reservation",
-      {},
+      body,
       {
         headers: {
           Authorization: authHeader,
           "X-CSRF-TOKEN": csrfToken,
           Accept: "application/json",
           "Content-Type": "application/json",
-          Origin: "https://voice.huemanai.co.uk",
-          Referer: "https://voice.huemanai.co.uk/",
         },
-        validateStatus: () => true,
       }
     );
 
@@ -27,15 +25,17 @@ export async function POST(req: NextRequest) {
       status: response.status,
     });
   } catch (error: any) {
-    console.error("Dashboard Proxy Error:", error?.response?.data || error);
+    console.log(
+      "DASHBOARD API ERROR =>",
+      error?.response?.data || error.message
+    );
 
     return NextResponse.json(
-      {
-        success: false,
-        message: error?.message || "Proxy Error",
+      error?.response?.data || {
+        message: "Something went wrong",
       },
       {
-        status: 500,
+        status: error?.response?.status || 500,
       }
     );
   }
