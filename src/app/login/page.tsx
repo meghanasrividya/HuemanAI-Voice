@@ -3,6 +3,8 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuthStore } from "../../store/authStore";
+import axios from "axios";
 
 // Monochrome white social SVGs matching the premium screenshot
 const GoogleIcon = () => (
@@ -25,6 +27,7 @@ const OktaIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: storeLogin } = useAuthStore();
   
   // Login Form States
   const [email, setEmail] = useState("");
@@ -42,7 +45,7 @@ export default function LoginPage() {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Form Submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Please fill in all fields.");
@@ -52,18 +55,40 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      console.log("Calling login API via Next.js proxy to avoid CORS errors...");
+      const response = await axios.post(
+        "/api/user/login",
+        { email, password }
+      );
+
+      const data = response.data;
+      console.log("LOGIN RESPONSE =>", data);
       
-      if (email === "demo@test.com") {
-        setError("Invalid email or password. Hint: Try using demo@test.com to test errors.");
-      } else if (email === "mfa@test.com") {
-        setStep("mfa");
+      if (response.status === 200 || response.status === 201) {
+        if (data.access_token && data.user) {
+          localStorage.setItem("access_token", data.access_token);
+          localStorage.setItem("csrf_token", data._csrf || "");
+          localStorage.setItem("user_data", JSON.stringify(data.user));
+
+          storeLogin(data.access_token, data.user);
+          router.push("/dashboard");
+        } else {
+          setError("Invalid response format from server.");
+        }
       } else {
-        // Successful login
-        router.push("/dashboard");
+        setError(data.message || data.error || "Invalid email or password.");
       }
-    }, 1200);
+    } catch (err: any) {
+      console.error("Login API request failed:", err);
+      setError(
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        "Failed to connect to the server. Please check your credentials and try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Social Auth Simulation
