@@ -107,6 +107,18 @@ export function startOfDayUtc(
     );
 }
 
+export function getDateKeyInTimezone(
+    date: Date,
+    timezone = DEFAULT_DISPLAY_TIMEZONE
+): string {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(date);
+}
+
 export function endOfDayUtc(
     date: Date
 ) {
