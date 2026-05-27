@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
+import Link from "next/link";
+
 
 import {
   Bell,
@@ -607,39 +609,63 @@ export default function DashboardPage() {
           {/* Nav */}
           <nav className="px-3 pt-4 space-y-1">
             {[
-              { icon: <LayoutDashboard size={16} />, label: "Dashboard", active: true },
-              { icon: <Phone size={16} />, label: "Calls" },
-              { icon: <ClipboardList size={16} />, label: "Actions" },
-              { icon: <TrendingUp size={16} />, label: "Insights" },
-              { icon: <PhoneCall size={16} />, label: "Outbound" },
-              { icon: <FileBarChart2 size={16} />, label: "Reports" },
+              { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard", active: true },
+              { icon: <Phone size={16} />, label: "Calls", href: "/calls" },
+              { icon: <ClipboardList size={16} />, label: "Actions", href: "/actions" },
+              { icon: <TrendingUp size={16} />, label: "Insights", href: "/insights" },
+              { icon: <PhoneCall size={16} />, label: "Outbound", href: "/outbound" },
+              { icon: <FileBarChart2 size={16} />, label: "Reports", href: "/reports" },
               { icon: <Sparkles size={16} />, label: "Netra AI", subLabel: "Coming Soon", purple: true },
-              { icon: <Settings size={16} />, label: "Admin" },
-            ].map((item) => (
-              <button
-                key={item.label}
-                title={sidebarCollapsed ? item.label : undefined}
-                className={`w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
-                  } ${item.active
-                    ? "bg-[#2a2a2a] text-white"
-                    : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-200"
-                  }`}
-              >
-                <span className={`shrink-0 ${item.purple ? "text-[#b158ff]" : ""}`}>
-                  {item.icon}
-                </span>
-                {!sidebarCollapsed && (
-                  <span className="leading-tight min-w-0">
-                    <span className="block text-[11px] font-semibold truncate">{item.label}</span>
-                    {item.subLabel && (
-                      <span className="block text-[9px] font-medium text-zinc-500 mt-0.5">
-                        {item.subLabel}
-                      </span>
-                    )}
+              { icon: <Settings size={16} />, label: "Admin", href: "/admin" },
+            ].map((item) => {
+              const content = (
+                <>
+                  <span className={`shrink-0 ${item.purple ? "text-[#b158ff]" : ""}`}>
+                    {item.icon}
                   </span>
-                )}
-              </button>
-            ))}
+                  {!sidebarCollapsed && (
+                    <span className="leading-tight min-w-0">
+                      <span className="block text-[11px] font-semibold truncate">{item.label}</span>
+                      {item.subLabel && (
+                        <span className="block text-[9px] font-medium text-zinc-500 mt-0.5">
+                          {item.subLabel}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </>
+              );
+
+              const className = `w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
+                } ${item.active
+                  ? "bg-[#2a2a2a] text-white"
+                  : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-200"
+                }`;
+
+              if (item.href) {
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={className}
+                  >
+                    {content}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.label}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={className}
+                  disabled={item.label === "Netra AI"}
+                >
+                  {content}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
