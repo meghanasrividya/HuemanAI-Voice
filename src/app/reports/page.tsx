@@ -30,6 +30,7 @@ const reports = [
         iconBg: "bg-amber-500/10",
         border: "border-amber-500/20",
         icon: <BedDouble size={18} />,
+        href: "/reports/bookings",
     },
 
     {
@@ -197,54 +198,69 @@ export default function ReportsPage() {
 
                     {/* Reports Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-                        {reports.map((report) => (
-                            <div
-                                key={report.title}
-                                className={`bg-[#0f0f0f] border ${report.border}
-                                    rounded-[12px] p-5
-                                    flex flex-col justify-between
-                                    transition-all duration-300
-                                    hover:border-white/20 hover:-translate-y-1`}
-                            >
-                                <div>
-                                    {/* Icon */}
+                        {reports.map((report) => {
+                            const cardBody = (
+                                <div
+                                    className={`bg-[#0f0f0f] border ${report.border}
+                                        rounded-[12px] p-5 h-full
+                                        flex flex-col justify-between
+                                        transition-all duration-300
+                                        hover:border-white/20 hover:-translate-y-1`}
+                                >
+                                    <div>
+                                        {/* Icon */}
+                                        <div
+                                            className={`w-[42px] h-[42px]
+                                                rounded-[10px]
+                                                flex items-center justify-center
+                                                mb-6 ${report.iconBg}`}
+                                            style={{
+                                                color: report.color,
+                                            }}
+                                        >
+                                            {report.icon}
+                                        </div>
+
+                                        {/* Title */}
+                                        <h2 className="text-[16px] font-bold leading-tight mb-2 text-white">
+                                            {report.title}
+                                        </h2>
+
+                                        {/* Description */}
+                                        <p className="text-zinc-400 text-[11px] leading-[18px]">
+                                            {report.description}
+                                        </p>
+                                    </div>
+
+                                    {/* Button */}
                                     <div
-                                        className={`w-[42px] h-[42px]
-                                            rounded-[10px]
-                                            flex items-center justify-center
-                                            mb-6 ${report.iconBg}`}
+                                        className="mt-6 text-[11px] font-bold
+                                            flex items-center gap-1.5
+                                            transition-opacity hover:opacity-80"
                                         style={{
                                             color: report.color,
                                         }}
                                     >
-                                        {report.icon}
+                                        Build Report
+                                        <span>→</span>
                                     </div>
-
-                                    {/* Title */}
-                                    <h2 className="text-[16px] font-bold leading-tight mb-2 text-white">
-                                        {report.title}
-                                    </h2>
-
-                                    {/* Description */}
-                                    <p className="text-zinc-400 text-[11px] leading-[18px]">
-                                        {report.description}
-                                    </p>
                                 </div>
+                            );
 
-                                {/* Button */}
-                                <button
-                                    className="mt-6 text-[11px] font-bold
-                                        flex items-center gap-1.5
-                                        transition-opacity hover:opacity-80"
-                                    style={{
-                                        color: report.color,
-                                    }}
-                                >
-                                    Build Report
-                                    <span>→</span>
-                                </button>
-                            </div>
-                        ))}
+                            if (report.href) {
+                                return (
+                                    <Link key={report.title} href={report.href} className="block cursor-pointer">
+                                        {cardBody}
+                                    </Link>
+                                );
+                            }
+
+                            return (
+                                <div key={report.title}>
+                                    {cardBody}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </main>

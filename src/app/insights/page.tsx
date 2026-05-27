@@ -18,7 +18,7 @@ import {
 import {
     useAuthStore,
     hasActionsOnlyRole,
-} from "@/stores/authStore";
+} from "@/store/authStore";
 
 import {
     callInsightsApi,
@@ -82,7 +82,7 @@ export default function InsightsPage() {
         useState<string | null>(null);
 
     const [activeTab, setActiveTab] =
-        useState("revenue");
+        useState<"revenue" | "recommendations">("revenue");
 
     const [
         historyOpen,
@@ -647,7 +647,7 @@ export default function InsightsPage() {
                             />
 
                             <InsightsList
-                                type={activeTab}
+                                type={activeTab === "recommendations" ? "recommendation" : activeTab}
                                 revenueInsights={
                                     reportData.revenueInsights
                                 }

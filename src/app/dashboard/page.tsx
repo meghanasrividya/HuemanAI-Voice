@@ -109,8 +109,10 @@ type ReservationGroup = {
 type AfterHoursStats = {
   callsAfterHours?: NumericValue;
   bookingsAfterHours?: NumericValue;
+  bookingsDoneAfterHours?: NumericValue;
   bookings?: NumericValue;
   coversAfterHours?: NumericValue;
+  coversGeneratedAfterHours?: NumericValue;
   covers?: NumericValue;
   conversionRate?: NumericValue;
   securedBookings?: ReservationGroup;

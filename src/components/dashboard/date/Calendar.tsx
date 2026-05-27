@@ -93,12 +93,12 @@ function Calendar({
                     "invisible",
 
                 ...classNames,
-            }}
+            } as any}
             components={{
                 IconLeft: ({
                                className,
                                ...props
-                           }) => (
+                           }: any) => (
                     <ChevronLeft
                         className={cn(
                             "h-4 w-4",
@@ -111,7 +111,7 @@ function Calendar({
                 IconRight: ({
                                 className,
                                 ...props
-                            }) => (
+                            }: any) => (
                     <ChevronRight
                         className={cn(
                             "h-4 w-4",
@@ -120,7 +120,7 @@ function Calendar({
                         {...props}
                     />
                 ),
-            }}
+            } as any}
             {...props}
         />
     );
