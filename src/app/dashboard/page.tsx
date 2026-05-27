@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
 import { apiClient } from "../../lib/apiClient";
+import { useAuthStore } from "../../store/authStore";
 import {
   Download,
   ChevronDown,
@@ -17,8 +18,11 @@ import {
   Award,
   Settings,
   AudioLines,
-  User2
+  User2,
+  Menu,
+  X
 } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 // Netra AI Star Custom Icon
 const NetraStarIcon = () => (
@@ -181,9 +185,11 @@ const DEFAULT_DATA = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [reservationTab, setReservationTab] = useState("Reservation");
   const [dateRange, setDateRange] = useState("Last 7 days");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Toggle tab inside Bookings Breakdown card
   const [bookingsBreakdownTab, setBookingsBreakdownTab] = useState("Date Booked");
@@ -200,10 +206,14 @@ export default function DashboardPage() {
         // 1. First, try a direct call to the live voice server with credentials enabled.
         // This is key for local development as the browser will send session/CSRF cookies of voice.huemanai.co.uk directly.
         console.log("Attempting direct live API POST to voice.huemanai.co.uk...");
+        const token = useAuthStore.getState().token;
         const response = await axios.post(
           "https://voice.huemanai.co.uk/api/dashboard/reservation",
           {},
-          { withCredentials: true }
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            withCredentials: true,
+          }
         );
         if (response.data) {
           console.log("Direct live API call successful!", response.data);
@@ -278,110 +288,151 @@ export default function DashboardPage() {
 
   return (
     <div
-      className="flex h-screen text-white font-sans overflow-hidden select-none"
+      className="flex flex-col h-screen text-white font-sans overflow-hidden select-none"
       style={{ backgroundColor: "#050505" }}
     >
+      {/* Mobile Top Bar */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0c0c0e] border-b border-[#1e1e24] h-[52px] flex-shrink-0">
+        <span className="text-[17px] font-bold tracking-tight text-white select-none">
+          HuemanAI
+        </span>
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
+        >
+          <Menu size={20} />
+        </button>
+      </div>
 
-      {/* ================= LEFT SIDEBAR ================= */}
-      <aside
-        className="w-[230px] border-r border-[#1e1e24] flex flex-col justify-between p-4 flex-shrink-0"
-        style={{ backgroundColor: "#0c0c0e" }}
-      >
-        <div className="space-y-6">
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Backdrop overlay on mobile when sidebar is open */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
-          {/* Logo */}
-          <div className="flex items-center gap-2 px-2 py-1">
-            <span className="text-[17px] font-bold tracking-tight text-white select-none">
-              HuemanAI
-            </span>
-          </div>
+        {/* ================= LEFT SIDEBAR ================= */}
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-[230px] border-r border-[#1e1e24] flex flex-col justify-between p-4 transition-transform duration-200 lg:static lg:translate-x-0 flex-shrink-0 h-full",
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+          style={{ backgroundColor: "#0c0c0e" }}
+        >
+          <div className="space-y-6">
 
-          {/* Navigation Options */}
-          <nav className="space-y-[3px]">
-            {[
-              { name: "Dashboard", icon: <Layers size={15} /> },
-              { name: "Calls", icon: <PhoneCall size={15} /> },
-              { name: "Actions", icon: <Calendar size={15} /> },
-              { name: "Insights", icon: <Activity size={15} /> },
-              { name: "Outbound", icon: <PhoneCall size={15} /> },
-              { name: "Reports", icon: <Award size={15} /> },
-            ].map((item) => (
+            {/* Logo */}
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-[17px] font-bold tracking-tight text-white select-none">
+                HuemanAI
+              </span>
               <button
-                key={item.name}
-                onClick={() => setActiveTab(item.name)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all text-left ${activeTab === item.name
+                onClick={() => setIsSidebarOpen(false)}
+                className="lg:hidden text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Navigation Options */}
+            <nav className="space-y-[3px]">
+              {[
+                { name: "Dashboard", icon: <Layers size={15} />, href: "/dashboard" },
+                { name: "Calls", icon: <PhoneCall size={15} />, href: "/calls" },
+                { name: "Actions", icon: <Calendar size={15} />, href: "/actions" },
+                { name: "Insights", icon: <Activity size={15} />, href: "/insights" },
+                { name: "Outbound", icon: <PhoneCall size={15} />, href: "/outbound_campaign" },
+                { name: "Reports", icon: <Award size={15} />, href: "/reports" },
+              ].map((item) => {
+                const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      router.push(item.href);
+                      setIsSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all text-left ${
+                      active
+                        ? "text-white font-bold"
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
+                    }`}
+                    style={active ? { backgroundColor: "#1d1d22" } : undefined}
+                  >
+                    {item.icon}
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+
+              {/* Special Netra AI item */}
+              <div className="px-3 py-2 flex flex-col gap-0.5">
+                <div className="flex items-center gap-3 text-zinc-400">
+                  <NetraStarIcon />
+                  <span className="text-xs font-semibold tracking-wide">Netra AI</span>
+                </div>
+                <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase ml-7">
+                  Coming Soon
+                </span>
+              </div>
+
+              {/* Admin item */}
+              <button
+                onClick={() => {
+                  router.push("/admin");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all text-left ${
+                  pathname === "/admin"
                     ? "text-white font-bold"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-                  }`}
-                style={activeTab === item.name ? { backgroundColor: "#1d1d22" } : undefined}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </button>
-            ))}
-
-            {/* Special Netra AI item */}
-            <div className="px-3 py-2 flex flex-col gap-0.5">
-              <div className="flex items-center gap-3 text-zinc-400">
-                <NetraStarIcon />
-                <span className="text-xs font-semibold tracking-wide">Netra AI</span>
-              </div>
-              <span className="text-[9px] text-purple-400 font-semibold tracking-wider uppercase ml-7">
-                Coming Soon
-              </span>
-            </div>
-
-            {/* Admin item */}
-            <button
-              onClick={() => setActiveTab("Admin")}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all text-left ${activeTab === "Admin"
-                  ? "text-white font-bold"
-                  : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
                 }`}
-              style={activeTab === "Admin" ? { backgroundColor: "#1d1d22" } : undefined}
+                style={pathname === "/admin" ? { backgroundColor: "#1d1d22" } : undefined}
+              >
+                <Settings size={15} />
+                <span>Admin</span>
+              </button>
+            </nav>
+          </div>
+
+          {/* Profile and Logout */}
+          <div className="space-y-4 pt-4 border-t border-[#18181b]/60">
+
+            {/* User Details */}
+            <div className="flex items-center gap-2.5 px-1.5">
+              <div className="w-[32px] h-[32px] rounded-full bg-[#18181b] border border-zinc-800 flex items-center justify-center text-xs font-extrabold text-zinc-300">
+                F
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-[11px] font-bold text-white truncate">Fredrick</p>
+                <p className="text-[9px] text-zinc-500 truncate">fredrick@huemanai.co.uk</p>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/40 transition-all text-left cursor-pointer"
             >
-              <Settings size={15} />
-              <span>Admin</span>
+              <LogOut size={14} />
+              <span>Logout</span>
             </button>
-          </nav>
-        </div>
 
-        {/* Profile and Logout */}
-        <div className="space-y-4 pt-4 border-t border-[#18181b]/60">
-
-          {/* User Details */}
-          <div className="flex items-center gap-2.5 px-1.5">
-            <div className="w-[32px] h-[32px] rounded-full bg-[#18181b] border border-zinc-800 flex items-center justify-center text-xs font-extrabold text-zinc-300">
-              F
+            {/* Sidebar Collapse */}
+            <div className="flex justify-start px-2 cursor-pointer text-zinc-600 hover:text-zinc-400 transition-colors">
+              <ChevronLeft size={16} />
             </div>
-            <div className="overflow-hidden">
-              <p className="text-[11px] font-bold text-white truncate">Fredrick</p>
-              <p className="text-[9px] text-zinc-500 truncate">fredrick@huemanai.co.uk</p>
-            </div>
+
           </div>
+        </aside>
 
-          {/* Logout Button */}
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/40 transition-all text-left cursor-pointer"
-          >
-            <LogOut size={14} />
-            <span>Logout</span>
-          </button>
-
-          {/* Sidebar Collapse */}
-          <div className="flex justify-start px-2 cursor-pointer text-zinc-600 hover:text-zinc-400 transition-colors">
-            <ChevronLeft size={16} />
-          </div>
-
-        </div>
-      </aside>
-
-      {/* ================= RIGHT WORKSPACE ================= */}
-      <div
-        className="flex-grow flex flex-col overflow-hidden"
-        style={{ backgroundColor: "#050505" }}
-      >
+        {/* ================= RIGHT WORKSPACE ================= */}
+        <div
+          className="flex-grow flex flex-col overflow-hidden min-w-0"
+          style={{ backgroundColor: "#050505" }}
+        >
 
         {/* Header Bar */}
         <header
@@ -395,24 +446,26 @@ export default function DashboardPage() {
 
             {/* Reservation / Feedback Pill Switcher */}
             <div
-              className="border border-zinc-900 p-0.5 rounded-full flex gap-0.5"
+              className="border border-zinc-900/80 p-0.5 rounded-full flex gap-0.5"
               style={{ backgroundColor: "#0b0b0d" }}
             >
               <button
                 onClick={() => setReservationTab("Reservation")}
-                className={`text-[10px] font-bold px-4 py-1 rounded-full transition-all ${reservationTab === "Reservation"
-                    ? "bg-white text-black"
-                    : "text-zinc-400 hover:text-white bg-transparent"
-                  }`}
+                className={`text-[10px] font-bold px-4 py-1 rounded-full transition-all border cursor-pointer ${
+                  reservationTab === "Reservation"
+                    ? "bg-[#18181b] border-zinc-800 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-white bg-transparent hover:bg-zinc-900/60 border-transparent"
+                }`}
               >
                 Reservation
               </button>
               <button
                 onClick={() => setReservationTab("Feedback")}
-                className={`text-[10px] font-bold px-4 py-1 rounded-full transition-all ${reservationTab === "Feedback"
-                    ? "bg-white text-black"
-                    : "text-zinc-400 hover:text-white bg-transparent"
-                  }`}
+                className={`text-[10px] font-bold px-4 py-1 rounded-full transition-all border cursor-pointer ${
+                  reservationTab === "Feedback"
+                    ? "bg-[#18181b] border-zinc-800 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-white bg-transparent hover:bg-zinc-900/60 border-transparent"
+                }`}
               >
                 Feedback
               </button>
@@ -1155,6 +1208,8 @@ export default function DashboardPage() {
           </div>
 
         </div>
+
+      </div>
 
       </div>
 

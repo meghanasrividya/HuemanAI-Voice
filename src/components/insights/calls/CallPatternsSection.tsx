@@ -1,420 +1,318 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-    ChevronDown,
-    CheckCircle2,
-    XCircle,
-} from "lucide-react";
-
-import {
-    ResponsiveContainer,
     BarChart,
     Bar,
-    CartesianGrid,
     XAxis,
     YAxis,
     Tooltip,
+    ResponsiveContainer,
+    Cell,
 } from "recharts";
+import { motion } from "framer-motion";
+import { CallPatternData } from "@/components/insights/types";
 
-import { cn } from "@/lib/utils";
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const CHART_COLORS = [
+    "#6366f1", "#8b5cf6", "#a78bfa", "#818cf8",
+    "#c4b5fd", "#7c3aed", "#4f46e5", "#4338ca",
+];
 
-type PatternData = {
-    byDayOfWeek: {
-        day: string;
-        count: number;
-        bookings: number;
-    }[];
-
-    byHourOfDay: {
-        hour: number | string;
-        count: number;
-        bookings: number;
-    }[];
-
-    topQuestions: {
-        question: string;
-        count: number;
-        answered: boolean;
-    }[];
-
-    byPartySize: {
-        size: string;
-        count: number;
-    }[];
-
-    topSpecialRequests?: {
-        request: string;
-        count: number;
-    }[];
+const OUTCOME_COLORS: Record<string, string> = {
+    "Booking Secured": "#10b981",
+    "Enquiry Handled": "#6366f1",
+    "Large Party Bookings": "#8b5cf6",
+    "Promotional / Offer": "#f59e0b",
+    "Transferred to Staff": "#f97316",
+    "Booking Cancelled": "#ef4444",
+    "General Assistance": "#64748b",
 };
 
-type Props = {
-    patterns: PatternData;
-};
-
-const tooltipStyle = {
-    backgroundColor: "hsl(220 14% 11%)",
-    border: "1px solid hsl(220 13% 18%)",
-    borderRadius: "6px",
+// ─── Tooltip styles (required by recharts — cannot use Tailwind) ──────────────
+const TOOLTIP_STYLE = {
+    backgroundColor: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "8px",
+    color: "hsl(var(--foreground))",
     fontSize: "12px",
-    color: "hsl(220 9% 80%)",
+    padding: "8px 12px",
 };
 
-const axisStyle = {
-    stroke: "hsl(220 13% 30%)",
+const AXIS_STYLE = {
     fontSize: 11,
-    fontFamily: "inherit",
+    fill: "hsl(var(--muted-foreground))",
 };
 
-function formatHour(hour: number | string) {
-    const parsed =
-        typeof hour === "string"
-            ? parseInt(hour)
-            : hour;
-
-    if (isNaN(parsed)) return String(hour);
-
-    if (parsed === 0) return "12am";
-
-    if (parsed === 12) return "12pm";
-
-    if (parsed > 12) {
-        return `${parsed - 12}pm`;
+// ─── Helper: shorten an hour range string ────────────────────────────────────
+function shortHour(h: number | string): string {
+    if (typeof h === "number") {
+        const ampm = h < 12 ? "am" : "pm";
+        return `${h === 0 ? 12 : h > 12 ? h - 12 : h}${ampm}`;
     }
-
-    return `${parsed}am`;
+    // String range like "07:00-08:59" → "7am"
+    const start = String(h).split("-")[0].split(":")[0];
+    const num = parseInt(start, 10);
+    if (isNaN(num)) return String(h);
+    const ampm = num < 12 ? "am" : "pm";
+    return `${num === 0 ? 12 : num > 12 ? num - 12 : num}${ampm}`;
 }
 
-function PartySizeRow({
-                          size,
-                          count,
-                          max,
-                      }: {
-    size: string;
-    count: number;
-    max: number;
+// ─── Card wrapper ─────────────────────────────────────────────────────────────
+function ChartCard({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
 }) {
-    const percentage =
-        max > 0 ? (count / max) * 100 : 0;
-
     return (
-        <div className="flex items-center gap-3">
-      <span className="w-6 shrink-0 text-right text-xs font-medium text-muted-foreground tabular-nums">
-        {size}
-      </span>
-
-            <div className="relative h-5 flex-1 overflow-hidden rounded-sm bg-muted/30">
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    transition={{
-                        duration: 0.6,
-                        ease: "easeOut",
-                    }}
-                    className="h-full rounded-sm"
-                    style={{
-                        backgroundColor: "hsl(217 91% 60%)",
-                        opacity: 0.75,
-                    }}
-                />
-            </div>
-
-            <span className="w-6 shrink-0 text-xs text-muted-foreground tabular-nums">
-        {count}
-      </span>
-        </div>
+        <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="rounded-xl border border-border bg-card p-4 sm:p-5"
+        >
+            <h3 className="mb-3 sm:mb-4 text-xs sm:text-sm font-semibold text-foreground uppercase tracking-wider">
+                {title}
+            </h3>
+            {children}
+        </motion.div>
     );
 }
 
-export default function CallPatternsSection({
-                                                patterns,
-                                            }: Props) {
-    const [expanded, setExpanded] =
-        useState(true);
+// ─── Main component ───────────────────────────────────────────────────────────
+type Props = {
+    patterns: CallPatternData;
+};
 
-    const maxPartySize = Math.max(
-        ...(patterns.byPartySize?.map(
-            (item) => item.count
-        ) ?? [1])
-    );
-
+export default function CallPatternsSection({ patterns }: Props) {
     return (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-            <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors"
-            >
-                <div className="flex items-center gap-2.5">
-          <span className="text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-            Call Patterns & Analytics
-          </span>
-                </div>
+        <div className="space-y-4 sm:space-y-5">
+            {/* Section title */}
+            <h2 className="text-sm sm:text-base font-semibold section-heading-gradient">
+                Call Patterns
+            </h2>
 
-                <ChevronDown
-                    className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                        expanded && "rotate-180"
-                    )}
-                />
-            </button>
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
 
-            <AnimatePresence initial={false}>
-                {expanded && (
-                    <motion.div
-                        initial={{
-                            height: 0,
-                            opacity: 0,
-                        }}
-                        animate={{
-                            height: "auto",
-                            opacity: 1,
-                        }}
-                        exit={{
-                            height: 0,
-                            opacity: 0,
-                        }}
-                        transition={{
-                            duration: 0.25,
-                            ease: "easeInOut",
-                        }}
-                        className="overflow-hidden"
-                    >
-                        <div className="divide-y divide-border border-t border-border">
-                            {/* Charts */}
-                            <div className="grid gap-0 divide-border md:grid-cols-2 md:divide-x">
-                                {/* Day of Week */}
-                                <div className="p-5">
-                                    <p className="mb-4 text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-                                        Calls by Day of Week
-                                    </p>
+                {/* ── Day of Week ── */}
+                <ChartCard title="Calls by Day of Week">
+                    <ResponsiveContainer width="100%" height={180}>
+                        <BarChart
+                            data={patterns.byDayOfWeek}
+                            barSize={18}
+                            margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+                        >
+                            <XAxis
+                                dataKey="day"
+                                tickFormatter={(v) => v.slice(0, 3)}
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <Tooltip
+                                contentStyle={TOOLTIP_STYLE}
+                                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                            />
+                            <Bar dataKey="count" name="Calls" radius={[4, 4, 0, 0]}>
+                                {patterns.byDayOfWeek.map((_, i) => (
+                                    <Cell
+                                        key={i}
+                                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                                        opacity={0.9}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
 
-                                    <div className="h-52">
-                                        <ResponsiveContainer
-                                            width="100%"
-                                            height="100%"
-                                        >
-                                            <BarChart
-                                                data={patterns.byDayOfWeek}
-                                                barGap={2}
-                                                barCategoryGap="30%"
-                                            >
-                                                <CartesianGrid
-                                                    strokeDasharray="3 3"
-                                                    stroke="hsl(220 13% 18%)"
-                                                    vertical={false}
-                                                />
+                {/* ── Hour of Day ── */}
+                <ChartCard title="Calls by Hour of Day">
+                    <ResponsiveContainer width="100%" height={180}>
+                        <BarChart
+                            data={patterns.byHourOfDay.map((p) => ({
+                                ...p,
+                                displayHour: shortHour(p.hour),
+                            }))}
+                            barSize={16}
+                            margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+                        >
+                            <XAxis
+                                dataKey="displayHour"
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <Tooltip
+                                contentStyle={TOOLTIP_STYLE}
+                                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                            />
+                            <Bar dataKey="count" name="Calls" radius={[4, 4, 0, 0]}>
+                                {patterns.byHourOfDay.map((_, i) => (
+                                    <Cell
+                                        key={i}
+                                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                                        opacity={0.9}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
 
-                                                <XAxis
-                                                    dataKey="day"
-                                                    tick={{ ...axisStyle }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tickFormatter={(v) =>
-                                                        v.slice(0, 3)
-                                                    }
-                                                />
-
-                                                <YAxis
-                                                    tick={{ ...axisStyle }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    width={28}
-                                                />
-
-                                                <Tooltip
-                                                    contentStyle={tooltipStyle}
-                                                    cursor={{
-                                                        fill:
-                                                            "hsl(220 13% 18%)",
-                                                    }}
-                                                />
-
-                                                <Bar
-                                                    dataKey="count"
-                                                    name="Total Calls"
-                                                    fill="hsl(220 9% 72%)"
-                                                    radius={[3, 3, 0, 0]}
-                                                    maxBarSize={32}
-                                                />
-
-                                                <Bar
-                                                    dataKey="bookings"
-                                                    name="Bookings"
-                                                    fill="hsl(142 71% 45%)"
-                                                    radius={[3, 3, 0, 0]}
-                                                    maxBarSize={32}
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                {/* Hour of Day */}
-                                <div className="p-5">
-                                    <p className="mb-4 text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-                                        Calls by Hour of Day
-                                    </p>
-
-                                    <div className="h-52">
-                                        <ResponsiveContainer
-                                            width="100%"
-                                            height="100%"
-                                        >
-                                            <BarChart
-                                                data={patterns.byHourOfDay}
-                                                barGap={2}
-                                                barCategoryGap="25%"
-                                            >
-                                                <CartesianGrid
-                                                    strokeDasharray="3 3"
-                                                    stroke="hsl(220 13% 18%)"
-                                                    vertical={false}
-                                                />
-
-                                                <XAxis
-                                                    dataKey="hour"
-                                                    tick={{ ...axisStyle }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tickFormatter={formatHour}
-                                                    interval={2}
-                                                />
-
-                                                <YAxis
-                                                    tick={{ ...axisStyle }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    width={28}
-                                                />
-
-                                                <Tooltip
-                                                    contentStyle={tooltipStyle}
-                                                    cursor={{
-                                                        fill:
-                                                            "hsl(220 13% 18%)",
-                                                    }}
-                                                />
-
-                                                <Bar
-                                                    dataKey="count"
-                                                    name="Total Calls"
-                                                    fill="hsl(220 9% 72%)"
-                                                    radius={[3, 3, 0, 0]}
-                                                    maxBarSize={24}
-                                                />
-
-                                                <Bar
-                                                    dataKey="bookings"
-                                                    name="Bookings"
-                                                    fill="hsl(142 71% 45%)"
-                                                    radius={[3, 3, 0, 0]}
-                                                    maxBarSize={24}
-                                                />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Top Questions */}
-                            <div className="p-5">
-                                <p className="mb-4 text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-                                    Top Questions Asked
-                                </p>
-
-                                <div className="grid gap-2 sm:grid-cols-2">
-                                    {patterns.topQuestions.map(
-                                        (question, index) => (
-                                            <div
-                                                key={index}
-                                                className="flex items-start gap-2.5 rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5"
-                                            >
-                                                {question.answered ? (
-                                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                                                ) : (
-                                                    <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400/80" />
-                                                )}
-
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm leading-snug text-foreground">
-                                                        {question.question}
-                                                    </p>
-
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {question.count}× ·{" "}
-                                                        {question.answered
-                                                            ? "Answered"
-                                                            : "Not answered"}
-                                                    </p>
-                                                </div>
+                {/* ── Call Outcomes (if present) ── */}
+                {patterns.byOutcome && patterns.byOutcome.length > 0 && (
+                    <ChartCard title="Call Outcomes">
+                        <div className="space-y-2">
+                            {patterns.byOutcome
+                                .sort((a, b) => b.count - a.count)
+                                .map((item) => {
+                                    const color =
+                                        OUTCOME_COLORS[item.outcome] ?? "#6366f1";
+                                    return (
+                                        <div key={item.outcome} className="space-y-1">
+                                            <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                                                <span className="text-muted-foreground truncate pr-2 max-w-[55%]">
+                                                    {item.outcome}
+                                                </span>
+                                                <span className="font-semibold text-foreground shrink-0">
+                                                    {item.count}{" "}
+                                                    <span className="font-normal text-muted-foreground">
+                                                        ({item.percentage.toFixed(1)}%)
+                                                    </span>
+                                                </span>
                                             </div>
-                                        )
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Party Size + Special Requests */}
-                            <div className="grid gap-0 divide-border md:grid-cols-2 md:divide-x">
-                                {/* Party Size */}
-                                <div className="p-5">
-                                    <p className="mb-4 text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-                                        Bookings by Party Size
-                                    </p>
-
-                                    <div className="space-y-2.5">
-                                        {patterns.byPartySize.map(
-                                            (item) => (
-                                                <PartySizeRow
-                                                    key={item.size}
-                                                    size={item.size}
-                                                    count={item.count}
-                                                    max={maxPartySize}
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${item.percentage}%` }}
+                                                    transition={{ duration: 0.6, ease: "easeOut" }}
+                                                    className="h-full rounded-full"
+                                                    style={{ backgroundColor: color }}
                                                 />
-                                            )
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Special Requests */}
-                                {patterns.topSpecialRequests &&
-                                    patterns
-                                        .topSpecialRequests.length >
-                                    0 && (
-                                        <div className="p-5">
-                                            <p className="mb-4 text-xs font-semibold uppercase tracking-widest section-heading-gradient">
-                                                Top Special Requests
-                                            </p>
-
-                                            <div className="space-y-2">
-                                                {[...patterns.topSpecialRequests]
-                                                    .sort(
-                                                        (a, b) =>
-                                                            b.count - a.count
-                                                    )
-                                                    .map((item, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center justify-between gap-3"
-                                                        >
-                              <span className="truncate text-sm text-foreground">
-                                {item.request}
-                              </span>
-
-                                                            <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted/50 px-1.5 text-xs font-semibold text-muted-foreground tabular-nums">
-                                {item.count}
-                              </span>
-                                                        </div>
-                                                    ))}
                                             </div>
                                         </div>
-                                    )}
-                            </div>
+                                    );
+                                })}
                         </div>
-                    </motion.div>
+                    </ChartCard>
                 )}
-            </AnimatePresence>
+
+                {/* ── Top Questions ── */}
+                <ChartCard title="Top Call Reasons">
+                    <div className="space-y-2">
+                        {patterns.topQuestions.slice(0, 8).map((item) => {
+                            const max = Math.max(
+                                ...patterns.topQuestions.slice(0, 8).map((q) => q.count)
+                            );
+                            return (
+                                <div key={item.question} className="space-y-1">
+                                    <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                                        <span className="text-muted-foreground truncate pr-2 max-w-[60%]">
+                                            {item.question}
+                                        </span>
+                                        <span className="font-semibold text-foreground shrink-0">
+                                            {item.count}
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{
+                                                width: `${(item.count / max) * 100}%`,
+                                            }}
+                                            transition={{ duration: 0.6, ease: "easeOut" }}
+                                            className="h-full rounded-full bg-primary"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </ChartCard>
+
+                {/* ── Party Size ── */}
+                <ChartCard title="Party Size Distribution">
+                    <ResponsiveContainer width="100%" height={180}>
+                        <BarChart
+                            data={patterns.byPartySize}
+                            barSize={24}
+                            margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+                        >
+                            <XAxis
+                                dataKey="size"
+                                tickFormatter={(v) => `${v}`}
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                tick={AXIS_STYLE}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <Tooltip
+                                contentStyle={TOOLTIP_STYLE}
+                                cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                                formatter={(val) => [val, "Bookings"]}
+                            />
+                            <Bar
+                                dataKey="count"
+                                name="Bookings"
+                                radius={[4, 4, 0, 0]}
+                            >
+                                {patterns.byPartySize.map((_, i) => (
+                                    <Cell
+                                        key={i}
+                                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                                        opacity={0.85}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartCard>
+
+                {/* ── Special Requests ── */}
+                {patterns.topSpecialRequests &&
+                    patterns.topSpecialRequests.length > 0 && (
+                        <ChartCard title="Top Special Requests">
+                            <div className="flex flex-wrap gap-2">
+                                {patterns.topSpecialRequests.map((item, i) => (
+                                    <div
+                                        key={item.request}
+                                        className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5"
+                                    >
+                                        <div
+                                            className="h-2 w-2 rounded-full shrink-0"
+                                            style={{
+                                                backgroundColor:
+                                                    CHART_COLORS[i % CHART_COLORS.length],
+                                            }}
+                                        />
+                                        <span className="text-xs text-foreground">
+                                            {item.request}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                            ×{item.count}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </ChartCard>
+                    )}
+            </div>
         </div>
     );
 }

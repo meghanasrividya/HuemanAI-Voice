@@ -1,28 +1,26 @@
 "use client";
-
+ 
+import { ExecutiveSummary } from "@/components/insights/types";
 import { motion } from "framer-motion";
-import { AlertTriangle, Target, PoundSterling } from "lucide-react";
+import { AlertTriangle, Siren, Target, PoundSterling } from "lucide-react";
 import {
     DEFAULT_DISPLAY_TIMEZONE,
     formatDateInTimezone,
     parseTimestampAsUtc,
-} from "@/lib/date";
+} from "@/lib/date/dateUtils";
 
-type Props = {
-    criticalFinding: string;
-    revenueImpact: string;
-    immediateAction: string;
+type Props = ExecutiveSummary & {
     periodStart: string;
     periodEnd: string;
 };
 
 export default function ExecutiveSummaryCard({
-                                                 criticalFinding,
-                                                 revenueImpact,
-                                                 immediateAction,
-                                                 periodStart,
-                                                 periodEnd,
-                                             }: Props) {
+    criticalFinding,
+    revenueImpact,
+    immediateAction,
+    periodStart,
+    periodEnd,
+}: Props) {
     const formatDate = (value: string) =>
         formatDateInTimezone(
             parseTimestampAsUtc(value),
@@ -39,63 +37,64 @@ export default function ExecutiveSummaryCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-destructive/5"
+            className="relative overflow-hidden rounded-2xl border border-[#1e1e24] bg-[#0b0b0d] p-6 sm:p-8"
         >
-            <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-destructive/5 blur-3xl" />
+            <div className="relative flex flex-col gap-5">
+                
+                {/* Executive Summary Header */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pb-1">
+                    <span className="inline-flex items-center rounded-full bg-[#072421] border border-[#0d3d37] px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#2dd4bf]">
+                        <AlertTriangle className="mr-1.5 h-3.5 w-3.5 text-[#eab308] fill-[#eab308]/10" />
+                        Executive Summary
+                    </span>
 
-            <div className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-primary/5 blur-3xl" />
-
-            <div className="relative p-6">
-                <div className="mb-4 flex items-center gap-2">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-600/10 to-blue-500/10 border border-teal-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-            <AlertTriangle className="mr-1.5 h-3 w-3 text-amber-500" />
-            Executive Summary
-          </span>
-
-                    <span className="text-xs font-medium text-foreground/70">
-            {formatDate(periodStart)} — {formatDate(periodEnd)}
-          </span>
+                    <span className="text-xs font-semibold text-zinc-400">
+                        {formatDate(periodStart)} — {formatDate(periodEnd)}
+                    </span>
                 </div>
 
-                <div className="mb-6">
-                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider section-heading-gradient">
-                        🚨 Critical Finding
-                    </h3>
+                {/* Critical Finding Section */}
+                <div className="space-y-2.5">
+                    <span className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-[#2dd4bf]">
+                        <Siren className="mr-1.5 h-3.5 w-3.5 text-[#2dd4bf]" />
+                        Critical Finding
+                    </span>
 
-                    <p className="text-lg font-medium leading-relaxed text-foreground">
+                    <h2 className="text-lg sm:text-xl font-bold leading-relaxed text-white select-text">
                         {criticalFinding}
-                    </p>
+                    </h2>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border border-border bg-background/50 p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-                                <PoundSterling className="h-4 w-4 text-amber-500" />
+                {/* Sub-cards Grid */}
+                <div className="grid gap-5 sm:grid-cols-2 pt-2">
+                    {/* Revenue Impact */}
+                    <div className="rounded-xl border border-[#18181b] bg-[#08080a] p-5 space-y-3 transition-all hover:border-zinc-800/80">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#eab308]/10 border border-[#eab308]/20">
+                                <PoundSterling className="h-3.5 w-3.5 text-[#eab308]" />
                             </div>
-
-                            <h4 className="text-sm font-semibold section-heading-gradient">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2dd4bf]">
                                 Revenue Impact
                             </h4>
                         </div>
 
-                        <p className="text-sm leading-relaxed text-muted-foreground">
+                        <p className="text-xs sm:text-sm leading-relaxed text-zinc-400 select-text">
                             {revenueImpact}
                         </p>
                     </div>
 
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                                <Target className="h-4 w-4 text-primary" />
+                    {/* Immediate Action */}
+                    <div className="rounded-xl border border-[#1e1e24] bg-[#161618] p-5 space-y-3 transition-all hover:border-zinc-700/80">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#18181b] border border-zinc-800/80">
+                                <Target className="h-3.5 w-3.5 text-zinc-300" />
                             </div>
-
-                            <h4 className="text-sm font-semibold section-heading-gradient">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-[#2dd4bf]">
                                 Immediate Action
                             </h4>
                         </div>
 
-                        <p className="text-sm leading-relaxed text-muted-foreground">
+                        <p className="text-xs sm:text-sm leading-relaxed text-zinc-400 select-text">
                             {immediateAction}
                         </p>
                     </div>

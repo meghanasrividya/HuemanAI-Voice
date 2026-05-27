@@ -1,129 +1,165 @@
 "use client";
 
-import {motion} from "framer-motion";
+import { CallStatistics } from "@/components/insights/types";
+import { motion } from "framer-motion";
 import {
     Phone,
     CalendarCheck,
     TrendingUp,
     ArrowRightLeft,
-    MessageSquare,
     Users,
+    VoicemailIcon,
 } from "lucide-react";
 
-type Stats = {
-    totalCalls?: number;
-    successfulBookings?: number;
-    conversionRate?: number;
-    transferRate?: number;
-    voicemailRate?: number;
-    totalCoversBooked?: number;
-};
-
 type Props = {
-    stats: Stats;
+    stats: CallStatistics;
     botName?: string;
     mode?: string;
 };
 
-const cards = [
+type StatCard = {
+    key: keyof CallStatistics;
+    label: string;
+    icon: React.ElementType;
+    format: (v: number | string | undefined) => string;
+    iconColor: string;
+    iconBg: string;
+};
+
+const RESERVATION_CARDS: StatCard[] = [
     {
         key: "totalCalls",
         label: "Total Calls",
         icon: Phone,
-        format: (v: number = 0) => v.toString(),
-        color: "text-blue-500",
-        bg: "bg-blue-500/10",
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#3b82f6]",
+        iconBg: "bg-[#3b82f6]/10 border border-[#3b82f6]/15",
     },
     {
         key: "successfulBookings",
         label: "Bookings Made",
         icon: CalendarCheck,
-        format: (v: number = 0) => v.toString(),
-        color: "text-green-500",
-        bg: "bg-green-500/10",
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#10b981]",
+        iconBg: "bg-[#10b981]/10 border border-[#10b981]/15",
     },
     {
         key: "conversionRate",
         label: "Conversion Rate",
         icon: TrendingUp,
-        format: (v: number = 0) => `${v.toFixed(1)}%`,
-        color: "text-emerald-500",
-        bg: "bg-emerald-500/10",
+        format: (v) => `${(v as number ?? 0).toFixed(1)}%`,
+        iconColor: "text-[#0d9488]",
+        iconBg: "bg-[#0d9488]/10 border border-[#0d9488]/15",
     },
     {
         key: "transferRate",
         label: "Transfer Rate",
         icon: ArrowRightLeft,
-        format: (v: number = 0) => `${v.toFixed(1)}%`,
-        color: "text-amber-500",
-        bg: "bg-amber-500/10",
-    },
-    {
-        key: "voicemailRate",
-        label: "Voicemail Rate",
-        icon: MessageSquare,
-        format: (v: number = 0) => `${v.toFixed(1)}%`,
-        color: "text-amber-500",
-        bg: "bg-amber-500/10",
+        format: (v) => `${(v as number ?? 0).toFixed(1)}%`,
+        iconColor: "text-[#f97316]",
+        iconBg: "bg-[#f97316]/10 border border-[#f97316]/15",
     },
     {
         key: "totalCoversBooked",
         label: "Covers Booked",
         icon: Users,
-        format: (v: number = 0) => v.toString(),
-        color: "text-purple-500",
-        bg: "bg-purple-500/10",
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#a855f7]",
+        iconBg: "bg-[#a855f7]/10 border border-[#a855f7]/15",
     },
 ];
 
-export default function StatsRow({stats, botName, mode}: Props) {
-    const feedbackMode =
+const FEEDBACK_CARDS: StatCard[] = [
+    {
+        key: "totalCalls",
+        label: "Total Calls",
+        icon: Phone,
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#3b82f6]",
+        iconBg: "bg-[#3b82f6]/10 border border-[#3b82f6]/15",
+    },
+    {
+        key: "successfulBookings",
+        label: "Re-Bookings",
+        icon: CalendarCheck,
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#10b981]",
+        iconBg: "bg-[#10b981]/10 border border-[#10b981]/15",
+    },
+    {
+        key: "conversionRate",
+        label: "Conversion Rate",
+        icon: TrendingUp,
+        format: (v) => `${(v as number ?? 0).toFixed(1)}%`,
+        iconColor: "text-[#0d9488]",
+        iconBg: "bg-[#0d9488]/10 border border-[#0d9488]/15",
+    },
+    {
+        key: "voicemailRate",
+        label: "Voicemail Rate",
+        icon: VoicemailIcon,
+        format: (v) => `${(v as number ?? 0).toFixed(1)}%`,
+        iconColor: "text-[#f97316]",
+        iconBg: "bg-[#f97316]/10 border border-[#f97316]/15",
+    },
+    {
+        key: "totalCoversBooked",
+        label: "Covers Booked",
+        icon: Users,
+        format: (v) => String(v ?? 0),
+        iconColor: "text-[#a855f7]",
+        iconBg: "bg-[#a855f7]/10 border border-[#a855f7]/15",
+    },
+];
+
+export default function StatsRow({ stats, botName, mode }: Props) {
+    const isFeedback =
         mode === "feedback" ||
         (mode !== "reservation" &&
-            botName?.toLowerCase().includes("feedback")) ||
-        (typeof stats.voicemailRate === "number" &&
-            stats.voicemailRate > 0);
+            botName?.toLowerCase().includes("feedback"));
 
-    const reservationMode = !feedbackMode;
-
-    const filtered = cards.filter((card) => {
-        if (card.key === "transferRate") return reservationMode;
-        if (card.key === "voicemailRate") return feedbackMode;
-        return true;
-    });
+    const cards = isFeedback ? FEEDBACK_CARDS : RESERVATION_CARDS;
 
     return (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {filtered.map((card, index) => {
+            {cards.map((card, index) => {
                 const Icon = card.icon;
+                
+                // Read value with robust fallback for different potential API names (e.g. successfulBookings, covers)
+                let rawValue = stats[card.key];
+                if (rawValue === undefined || rawValue === null) {
+                    if (card.key === "successfulBookings") {
+                        rawValue = (stats as any).bookingsMade || (stats as any).bookings;
+                    } else if (card.key === "totalCoversBooked") {
+                        rawValue = (stats as any).coversBooked || (stats as any).covers;
+                    }
+                }
 
                 return (
                     <motion.div
                         key={card.key}
-                        initial={{opacity: 0, y: 12}}
-                        animate={{opacity: 1, y: 0}}
-                        transition={{duration: 0.4, delay: index * 0.08}}
-                        className="group relative overflow-hidden rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:border-border/80 hover:shadow-sm"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                        className="relative overflow-hidden rounded-xl border border-[#1e1e24] bg-[#161618] p-5 transition-all duration-300 hover:border-zinc-700/80"
                     >
-                        <div
-                            className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-primary/3 blur-2xl transition-colors group-hover:bg-primary/5"/>
-
-                        <div className="relative">
-                            <div className="mb-3 flex items-center gap-2">
-                                <div
-                                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.bg}`}
-                                >
-                                    <Icon className={`h-4 w-4 ${card.color}`}/>
-                                </div>
+                        <div className="relative flex flex-col items-start gap-4">
+                            {/* Premium circular colored badge for icon */}
+                            <div
+                                className={`flex h-9 w-9 items-center justify-center rounded-full ${card.iconBg}`}
+                            >
+                                <Icon className={`h-4.5 w-4.5 ${card.iconColor}`} />
                             </div>
 
-                            <p className="text-2xl font-bold tracking-tight text-foreground">
-                                {card.format(stats[card.key as keyof Stats] as number)}
-                            </p>
+                            <div className="space-y-0.5">
+                                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                                    {card.format(rawValue as any)}
+                                </h3>
 
-                            <p className="mt-0.5 text-xs font-medium text-muted-foreground">
-                                {card.label}
-                            </p>
+                                <p className="text-xs font-semibold text-[#71717a] tracking-wide">
+                                    {card.label}
+                                </p>
+                            </div>
                         </div>
                     </motion.div>
                 );
