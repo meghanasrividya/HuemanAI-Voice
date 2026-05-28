@@ -270,7 +270,7 @@ export default function RecommendationInsights({ recommendations }: Props) {
     return (
         <div className="space-y-3">
             {recommendations.map((item, i) => (
-                <RecommendationCard key={item.id} item={item} defaultOpen={false} />
+                <RecommendationCard key={item.id} item={item} defaultOpen={i === 0} />
             ))}
         </div>
     );

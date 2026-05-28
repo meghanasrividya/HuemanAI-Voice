@@ -138,7 +138,7 @@ function RevenueCard({
                                             Signal Detected
                                         </h4>
                                     </div>
-                                    
+
                                     <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
                                         {insight.signal.description}
                                     </p>
@@ -174,7 +174,7 @@ function RevenueCard({
                                             Revenue Impact
                                         </h4>
                                     </div>
-                                    
+
                                     <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
                                         {insight.impact.description}
                                     </p>
@@ -198,7 +198,7 @@ function RevenueCard({
                                             Why This Matters
                                         </h4>
                                     </div>
-                                    
+
                                     <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
                                         {insight.reasoning}
                                     </p>
@@ -214,11 +214,11 @@ function RevenueCard({
                                             Action
                                         </h4>
                                     </div>
-                                    
+
                                     <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
                                         {insight.action.description}
                                     </p>
-                                    
+
                                     {(insight.action.owner || insight.action.timeline) && (
                                         <div className="mt-4 flex flex-wrap gap-2.5 pt-1">
                                             {insight.action.owner && (
@@ -279,7 +279,7 @@ export default function RevenueInsights({ insights }: Props) {
     return (
         <div className="space-y-3">
             {insights.map((item, i) => (
-                <RevenueCard key={item.id} insight={item} defaultOpen={false} />
+                <RevenueCard key={item.id} insight={item} defaultOpen={i === 0} />
             ))}
         </div>
     );

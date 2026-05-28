@@ -68,7 +68,7 @@ type Props = {
 };
 
 export default function InsightsCharts({ patterns }: Props) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
 
     // Compute max party size count for scaling the horizontal bars
     const maxPartySizeCount = Math.max(...(patterns.byPartySize || []).map((p) => p.count), 1);

@@ -1,8 +1,8 @@
 "use client";
 
-import ExecutiveSummaryCard from "@/components/insights/calls/ExecutiveSummaryCard";
-import StatsRow from "@/components/insights/calls/StatsRow";
-import InsightsEmptyState from "@/components/insights/calls/InsightsEmptyState";
+import ExecutiveSummaryCard from "@/components/insights/call/ExecutiveSummaryCard";
+import StatsRow from "@/components/insights/call/StatsRow";
+import InsightsEmptyState from "@/components/insights/call/InsightsEmptyState";
 import InsightsFilters, { InsightsTab } from "@/components/insights/InsightsFilters";
 import RevenueInsights from "@/components/insights/RevenueInsights";
 import BotIssueInsights from "@/components/insights/BotIssueInsights";
@@ -152,6 +152,39 @@ export default function InsightsDashboard({
             {/* Global style tag to inject high fidelity print overrides */}
             <style dangerouslySetInnerHTML={{
                 __html: `
+                /* Custom Dark Scrollbar matching screenshot */
+                ::-webkit-scrollbar {
+                    width: 14px;
+                    height: 14px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: #1e1e24;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background-color: #52525b;
+                    border-radius: 10px;
+                    border: 3px solid #1e1e24;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background-color: #71717a;
+                }
+                ::-webkit-scrollbar-button:vertical:decrement {
+                    display: block;
+                    background-color: #1e1e24;
+                    height: 14px;
+                    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgb(161,161,170)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m18 15-6-6-6 6'/></svg>");
+                    background-position: center;
+                    background-repeat: no-repeat;
+                }
+                ::-webkit-scrollbar-button:vertical:increment {
+                    display: block;
+                    background-color: #1e1e24;
+                    height: 14px;
+                    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgb(161,161,170)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+                    background-position: center;
+                    background-repeat: no-repeat;
+                }
+
                 @media print {
                     @page {
                         size: A4 portrait;
