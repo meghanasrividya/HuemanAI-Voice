@@ -21,6 +21,7 @@ export type GenerateReportParams = {
     search?: string;
     page?: number;
     pageSize?: number;
+    filters?: Array<{ column: string; operator: string; value: string }>;
 };
 
 export type BookingReservation = {
@@ -66,14 +67,39 @@ export async function generateBookingsReport(
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token")?.replace("Bearer ", "") || "" : "";
     const csrf = typeof window !== "undefined" ? localStorage.getItem("csrf_token") || "" : "";
 
+    const fromDate = params?.startDate ? (params.startDate.includes("T") ? params.startDate.split("T")[0] : params.startDate) : undefined;
+    const toDate = params?.endDate ? (params.endDate.includes("T") ? params.endDate.split("T")[0] : params.endDate) : undefined;
+
+    const formattedFilters = (params?.filters || []).map(f => ({
+        column: f.column,
+        field: f.column, // In case backend expects field instead of column
+        operator: f.operator,
+        value: f.value
+    }));
+
     const payload = params ? {
         columns: params.columns,
-        date_field: params.dateField,
-        start_date: params.startDate,
-        end_date: params.endDate,
-        search: params.search,
+        dateRange: {
+            column: params.dateField,
+            from: fromDate,
+            to: toDate,
+        },
+        filters: formattedFilters,
         page: params.page,
+        pageSize: params.pageSize,
+
+        // Backward compatibility:
+        date_field: params.dateField,
+        dateField: params.dateField,
+        start_date: params.startDate,
+        startDate: params.startDate,
+        end_date: params.endDate,
+        endDate: params.endDate,
+        search: params.search,
         page_size: params.pageSize,
+        pageSize_compat: params.pageSize,
+        limit: params.pageSize,
+        offset: params.page && params.pageSize ? (params.page - 1) * params.pageSize : 0,
     } : {};
 
     const response = await apiClient.post<ReportDataResponse>(

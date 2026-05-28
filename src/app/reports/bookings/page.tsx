@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
     LayoutDashboard,
@@ -60,6 +60,35 @@ export default function BookingsReportPage() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
 
+    // Filter tab states
+    const [pendingFilterColumn, setPendingFilterColumn] = useState<string>("");
+    const [pendingFilterOperator, setPendingFilterOperator] = useState<string>("equals");
+    const [pendingFilterValue, setPendingFilterValue] = useState<string>("");
+    const [activeFilters, setActiveFilters] = useState<Array<{ column: string; operator: string; value: string }>>([]);
+    const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
+    const [operatorDropdownOpen, setOperatorDropdownOpen] = useState(false);
+
+    // Refs for click-outside on custom dropdowns
+    const columnDropdownRef = useRef<HTMLDivElement>(null);
+    const columnBtnRef = useRef<HTMLButtonElement>(null);
+    const operatorDropdownRef = useRef<HTMLDivElement>(null);
+    const [colDropPos, setColDropPos] = useState({ bottom: 0, left: 0, width: 0 });
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as Node;
+            const inColDropdown = columnDropdownRef.current?.contains(target);
+            const inColBtn = columnBtnRef.current?.contains(target);
+            if (!inColDropdown && !inColBtn) setColumnDropdownOpen(false);
+            if (operatorDropdownRef.current && !operatorDropdownRef.current.contains(target)) {
+                setOperatorDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     // Debounce search input
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -99,29 +128,93 @@ export default function BookingsReportPage() {
             setLoading(true);
             setError(null);
             try {
-                const today = new Date();
+                const now = new Date();
+
+                const createUTCDate = (
+                    year: number,
+                    month: number,
+                    day: number,
+                    endOfDay = false
+                ) => {
+                    return new Date(
+                        Date.UTC(
+                            year,
+                            month,
+                            day,
+                            endOfDay ? 23 : 0,
+                            endOfDay ? 59 : 0,
+                            endOfDay ? 59 : 0,
+                            endOfDay ? 999 : 0
+                        )
+                    ).toISOString();
+                };
+
                 let start = "";
                 let end = "";
 
                 if (dateRangeType === "7days") {
-                    const s = new Date();
-                    s.setDate(today.getDate() - 7);
-                    start = s.toISOString();
-                    end = today.toISOString();
-                } else if (dateRangeType === "30days") {
-                    const s = new Date();
-                    s.setDate(today.getDate() - 30);
-                    start = s.toISOString();
-                    end = today.toISOString();
-                } else if (dateRangeType === "month") {
-                    const s = new Date(today.getFullYear(), today.getMonth(), 1);
-                    start = s.toISOString();
-                    end = today.toISOString();
-                } else if (dateRangeType === "custom") {
-                    const sStart = customStartDate ? new Date(customStartDate + "T00:00:00.000Z") : new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-                    const sEnd = customEndDate ? new Date(customEndDate + "T23:59:59.999Z") : today;
-                    start = sStart.toISOString();
-                    end = sEnd.toISOString();
+                    const startDate = new Date();
+                    startDate.setUTCDate(startDate.getUTCDate() - 7);
+
+                    start = createUTCDate(
+                        startDate.getUTCFullYear(),
+                        startDate.getUTCMonth(),
+                        startDate.getUTCDate()
+                    );
+
+                    end = createUTCDate(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate(),
+                        true
+                    );
+                }
+
+                else if (dateRangeType === "30days") {
+                    const startDate = new Date();
+                    startDate.setUTCDate(startDate.getUTCDate() - 30);
+
+                    start = createUTCDate(
+                        startDate.getUTCFullYear(),
+                        startDate.getUTCMonth(),
+                        startDate.getUTCDate()
+                    );
+
+                    end = createUTCDate(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate(),
+                        true
+                    );
+                }
+
+                else if (dateRangeType === "month") {
+                    start = createUTCDate(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        1
+                    );
+
+                    end = createUTCDate(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate(),
+                        true
+                    );
+                }
+
+                else if (dateRangeType === "custom") {
+                    if (customStartDate) {
+                        const [y, m, d] = customStartDate.split("-").map(Number);
+
+                        start = createUTCDate(y, m - 1, d);
+                    }
+
+                    if (customEndDate) {
+                        const [y, m, d] = customEndDate.split("-").map(Number);
+
+                        end = createUTCDate(y, m - 1, d, true);
+                    }
                 }
 
                 const res = await generateBookingsReport({
@@ -132,6 +225,7 @@ export default function BookingsReportPage() {
                     search: debouncedSearch,
                     page,
                     pageSize,
+                    filters: activeFilters,
                 });
 
                 if (active) {
@@ -154,7 +248,7 @@ export default function BookingsReportPage() {
         return () => {
             active = false;
         };
-    }, [metadata, selectedColumns, dateField, dateRangeType, customStartDate, customEndDate, debouncedSearch, page, pageSize]);
+    }, [metadata, selectedColumns, dateField, dateRangeType, customStartDate, customEndDate, debouncedSearch, page, pageSize, activeFilters]);
 
     // Handle column selection toggle
     const toggleColumn = (colKey: string) => {
@@ -279,8 +373,24 @@ export default function BookingsReportPage() {
         return pages;
     }, [page, totalPages]);
 
+    // Client-side filtered data (applied on top of server-paginated reportData)
+    const displayData = useMemo(() => {
+        if (!reportData || activeFilters.length === 0) return reportData;
+        const filtered = reportData.data.filter(row =>
+            activeFilters.every(f => {
+                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
+                const filterVal = f.value.toLowerCase().trim();
+                if (f.operator === "equals") return cellVal === filterVal;
+                if (f.operator === "contains") return cellVal.includes(filterVal);
+                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
+                return true;
+            })
+        );
+        return { ...reportData, data: filtered };
+    }, [reportData, activeFilters]);
+
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white flex overflow-hidden relative">
+        <div className="h-screen bg-[#0a0a0a] text-white flex overflow-hidden relative">
             {/* Print Specific CSS */}
             <style jsx global>{`
                 @media print {
@@ -642,8 +752,170 @@ export default function BookingsReportPage() {
                                             })}
                                     </div>
                                 ) : (
-                                    <div className="py-8 text-center">
-                                        <p className="text-[11px] text-zinc-500 italic">No custom filters active.</p>
+                                    <div className="space-y-3">
+                                        {/* ADD FILTER card */}
+                                        <div className="rounded-[10px] overflow-hidden border border-[#1e1e1e]">
+                                            <div className="border-l-2 border-[#f59e0b] bg-[#0f0f0f] p-3">
+                                                <p className="text-[9px] font-black tracking-widest text-[#f59e0b] uppercase mb-3">Add Filter</p>
+
+                                                {/* Column selector custom dropdown */}
+                                                <div className="relative mb-2">
+                                                    <button
+                                                        ref={columnBtnRef}
+                                                        onClick={() => {
+                                                            if (!columnDropdownOpen && columnBtnRef.current) {
+                                                                const rect = columnBtnRef.current.getBoundingClientRect();
+                                                                setColDropPos({
+                                                                    bottom: window.innerHeight - rect.top + 4,
+                                                                    left: rect.left,
+                                                                    width: rect.width,
+                                                                });
+                                                            }
+                                                            setColumnDropdownOpen(v => !v);
+                                                            setOperatorDropdownOpen(false);
+                                                        }}
+                                                        className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-left transition-colors hover:border-[#333]"
+                                                    >
+                                                        <span className={pendingFilterColumn ? "text-white font-semibold" : "text-zinc-500"}>
+                                                            {pendingFilterColumn ? (metadata?.columns[pendingFilterColumn]?.label || pendingFilterColumn) : "Select Column"}
+                                                        </span>
+                                                        <ChevronRight size={12} className={`text-zinc-500 transition-transform ${columnDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Column dropdown portal - fixed positioned to escape overflow clipping */}
+                                                {columnDropdownOpen && metadata && (
+                                                    <div
+                                                        ref={columnDropdownRef}
+                                                        className="fixed bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-[9999] shadow-2xl"
+                                                        style={{
+                                                            bottom: `${colDropPos.bottom}px`,
+                                                            left: `${colDropPos.left}px`,
+                                                            width: `${colDropPos.width}px`,
+                                                            maxHeight: '320px',
+                                                        }}
+                                                    >
+                                                        <div className="overflow-y-auto" style={{ maxHeight: '320px' }}>
+                                                            {Object.entries(metadata.columns).map(([colKey, colInfo]) => (
+                                                                <button
+                                                                    key={colKey}
+                                                                    onClick={() => { setPendingFilterColumn(colKey); setColumnDropdownOpen(false); }}
+                                                                    className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
+                                                                        pendingFilterColumn === colKey ? "text-[#f59e0b]" : "text-zinc-300"
+                                                                    }`}
+                                                                >
+                                                                    {colInfo.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Operator + Value row */}
+                                                <div className="flex gap-2 mb-3">
+                                                    {/* Operator custom dropdown */}
+                                                    <div className="relative shrink-0" ref={operatorDropdownRef}>
+                                                        <button
+                                                            onClick={() => { setOperatorDropdownOpen(v => !v); setColumnDropdownOpen(false); }}
+                                                            className="flex items-center gap-1.5 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-zinc-300 font-semibold whitespace-nowrap hover:border-[#333] transition-colors"
+                                                        >
+                                                            {pendingFilterOperator === "equals" ? "Equals" : pendingFilterOperator === "contains" ? "Contains" : "In List"}
+                                                            <ChevronRight size={11} className={`text-zinc-500 transition-transform ${operatorDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
+                                                        </button>
+                                                        {operatorDropdownOpen && (
+                                                            <div className="absolute bottom-full left-0 mb-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px]">
+                                                                {[
+                                                                    { id: "equals", label: "Equals" },
+                                                                    { id: "contains", label: "Contains" },
+                                                                    { id: "in_list", label: "In List" },
+                                                                ].map(op => (
+                                                                    <button
+                                                                        key={op.id}
+                                                                        onClick={() => { setPendingFilterOperator(op.id); setOperatorDropdownOpen(false); }}
+                                                                        className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
+                                                                    >
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#f59e0b]" : "text-transparent"}`}>✓</span>
+                                                                        {op.label}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Value input */}
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Value..."
+                                                        value={pendingFilterValue}
+                                                        onChange={e => setPendingFilterValue(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
+                                                                setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
+                                                                setPage(1);
+                                                                setPendingFilterColumn("");
+                                                                setPendingFilterValue("");
+                                                                setPendingFilterOperator("equals");
+                                                            }
+                                                        }}
+                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-amber-500/50"
+                                                    />
+                                                </div>
+
+                                                {/* Add Filter button */}
+                                                <button
+                                                    onClick={() => {
+                                                        if (!pendingFilterColumn || !pendingFilterValue.trim()) return;
+                                                        setActiveFilters(prev => [...prev, {
+                                                            column: pendingFilterColumn,
+                                                            operator: pendingFilterOperator,
+                                                            value: pendingFilterValue.trim(),
+                                                        }]);
+                                                        setPage(1);
+                                                        setPendingFilterColumn("");
+                                                        setPendingFilterValue("");
+                                                        setPendingFilterOperator("equals");
+                                                    }}
+                                                    disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#b45309] to-[#92400e] hover:from-[#c05a0a] hover:to-[#a14a0f] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                >
+                                                    + Add Filter
+                                                </button>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: Area = Patio, Covers &gt; 4</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Active filters chips */}
+                                        {activeFilters.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                {activeFilters.map((f, i) => (
+                                                    <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
+                                                        <span className="text-[10px] font-medium leading-tight">
+                                                            <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
+                                                            <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
+                                                            <span className="text-[#f59e0b]">{f.value}</span>
+                                                        </span>
+                                                        <button
+                                                            onClick={() => {
+                                                                setActiveFilters(prev => prev.filter((_, idx) => idx !== i));
+                                                                setPage(1);
+                                                            }}
+                                                            className="text-zinc-600 hover:text-red-400 transition-colors text-[11px] font-black ml-2 shrink-0"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveFilters([]);
+                                                        setPage(1);
+                                                    }}
+                                                    className="w-full text-[9px] text-zinc-500 hover:text-red-400 transition-colors py-1 font-semibold"
+                                                >
+                                                    Clear all filters
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -724,8 +996,8 @@ export default function BookingsReportPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#181818]/60 text-[11px]">
-                                        {reportData && reportData.data.length > 0 ? (
-                                            reportData.data.map((row, rowIndex) => (
+                                        {displayData && displayData.data.length > 0 ? (
+                                            displayData.data.map((row, rowIndex) => (
                                                 <tr
                                                     key={rowIndex}
                                                     className="hover:bg-[#161616]/40 transition-colors"
@@ -786,11 +1058,11 @@ export default function BookingsReportPage() {
                                     <div>
                                         Showing{" "}
                                         <span className="text-white">
-                                            {Math.min((page - 1) * pageSize + 1, reportData.total)}
+                                            {reportData.data.length > 0 ? (page - 1) * pageSize + 1 : 0}
                                         </span>{" "}
                                         –{" "}
                                         <span className="text-white">
-                                            {Math.min(page * pageSize, reportData.total)}
+                                            {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
                                         of <span className="text-[#f59e0b] font-black">{reportData.total}</span> results
                                     </div>
