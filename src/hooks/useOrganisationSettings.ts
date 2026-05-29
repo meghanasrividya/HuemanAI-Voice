@@ -30,12 +30,15 @@ export interface OrganisationSettings {
 
 async function fetchOrganisationSettings(): Promise<OrganisationSettings> {
   try {
-    const response = await apiClient.get("/organisation/settings");
+    const response = await apiClient.get("/admin/settings");
     const data = response.data;
-    if (data && data.settings) {
+    if (data) {
       return {
         ...data,
-        insight_agent_ids: data.insight_agent_ids || data.settings.insight_agent_ids,
+        insight_agent_ids: data.insight_agent_ids || data.settings?.insight_agent_ids,
+        settings: data.settings || {
+          insight_agent_ids: data.insight_agent_ids || data.settings?.insight_agent_ids
+        }
       };
     }
     return data;

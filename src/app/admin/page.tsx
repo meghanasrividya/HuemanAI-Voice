@@ -47,18 +47,24 @@ function AdminSelect({ value, onChange, options, id }: AdminSelectProps) {
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
+        className="admin-select-button"
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "#050507", border: "1px solid #232327", borderRadius: 12, padding: "12px 16px", color: "white", fontSize: 14, cursor: "pointer", outline: "none" }}
       >
         <span>{active?.label}</span>
         <ChevronDown size={14} style={{ color: "#71717a", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} />
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 9999, background: "#101014", border: "1px solid #2a2a30", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+        <div 
+          className="admin-select-dropdown"
+          style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 9999, background: "#101014", border: "1px solid #2a2a30", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}
+        >
           {options.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => { onChange(opt.value); setOpen(false); }}
+              className="admin-select-option"
+              data-selected={opt.value === value}
               style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 16px", background: opt.value === value ? "#1a1a22" : "transparent", color: opt.value === value ? "white" : "#d4d4d8", fontSize: 14, cursor: "pointer", border: "none", textAlign: "left", outline: "none" }}
             >
               <span style={{ width: 16, display: "inline-flex", alignItems: "center", color: "#a1a1aa", fontSize: 12 }}>
@@ -604,9 +610,11 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setEnableOutboundCalls(!enableOutboundCalls)}
+                className="admin-toggle-button"
+                data-active={enableOutboundCalls}
                 style={{ width: 44, height: 24, borderRadius: 9999, padding: 3, cursor: "pointer", transition: "background 0.2s", background: enableOutboundCalls ? "white" : "#3f3f46", border: "none", display: "flex", alignItems: "center", flexShrink: 0 }}
               >
-                <span style={{ width: 18, height: 18, borderRadius: 9999, background: enableOutboundCalls ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableOutboundCalls ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
+                <span className="admin-toggle-dot" data-active={enableOutboundCalls} style={{ width: 18, height: 18, borderRadius: 9999, background: enableOutboundCalls ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableOutboundCalls ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
               </button>
             </div>
 
@@ -616,9 +624,11 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setEnableAiInsights(!enableAiInsights)}
+                className="admin-toggle-button"
+                data-active={enableAiInsights}
                 style={{ width: 44, height: 24, borderRadius: 9999, padding: 3, cursor: "pointer", transition: "background 0.2s", background: enableAiInsights ? "white" : "#3f3f46", border: "none", display: "flex", alignItems: "center", flexShrink: 0 }}
               >
-                <span style={{ width: 18, height: 18, borderRadius: 9999, background: enableAiInsights ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableAiInsights ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
+                <span className="admin-toggle-dot" data-active={enableAiInsights} style={{ width: 18, height: 18, borderRadius: 9999, background: enableAiInsights ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableAiInsights ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
               </button>
             </div>
 
@@ -628,9 +638,11 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setEnableLocations(!enableLocations)}
+                className="admin-toggle-button"
+                data-active={enableLocations}
                 style={{ width: 44, height: 24, borderRadius: 9999, padding: 3, cursor: "pointer", transition: "background 0.2s", background: enableLocations ? "white" : "#3f3f46", border: "none", display: "flex", alignItems: "center", flexShrink: 0 }}
               >
-                <span style={{ width: 18, height: 18, borderRadius: 9999, background: enableLocations ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableLocations ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
+                <span className="admin-toggle-dot" data-active={enableLocations} style={{ width: 18, height: 18, borderRadius: 9999, background: enableLocations ? "#0c0c0f" : "#a1a1aa", transition: "transform 0.2s", transform: enableLocations ? "translateX(20px)" : "translateX(0px)", display: "block" }} />
               </button>
             </div>
 

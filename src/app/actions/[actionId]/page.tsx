@@ -490,6 +490,18 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
                         <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">Name</p>
                         <p className="mt-1 text-sm font-bold text-white">{action.email_notification.name || "-"}</p>
                       </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">Date</p>
+                        <p className="mt-1 text-sm font-bold text-white">{action.email_notification.date || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">Party Size</p>
+                        <p className="mt-1 text-sm font-bold text-white">{action.email_notification.party_size || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">Service Type</p>
+                        <p className="mt-1 text-sm font-bold text-white">{action.email_notification.serviceType || "-"}</p>
+                      </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-[#1d1d22]/50">

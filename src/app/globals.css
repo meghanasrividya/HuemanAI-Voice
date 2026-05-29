@@ -30,27 +30,28 @@ html:not(.dark) .bg-\[\#070709\] {
   background-color: #fbfbfb !important;
 }
 
-html:not(.dark) .bg-\[\#0c0c0e\],
-html:not(.dark) .bg-\[\#0b0b0d\],
-html:not(.dark) .bg-\[\#0c0c0f\],
+html:not(.dark) .bg-\[\#0C0C0E\],
+html:not(.dark) .bg-\[\#0B0B0D\],
+html:not(.dark) .bg-\[\#0C0C0F\],
 html:not(.dark) .bg-white\/5 {
   background-color: #ffffff !important;
 }
 
 html:not(.dark) .bg-\[\#050507\],
-html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#0A0A0C\],
 html:not(.dark) .bg-\[\#101118\] {
   background-color: #f4f4f5 !important;
 }
 
-html:not(.dark) .bg-\[\#1d1d22\],
+html:not(.dark) .bg-\[\#1D1D22\],
 html:not(.dark) .bg-zinc-800 {
   background-color: #f4f4f5 !important;
   color: #09090b !important;
 }
 
-/* Sidebar user block avatar fallback */
-html:not(.dark) .bg-\[\#18181b\] {
+/* Sidebar user block avatar fallback & Role Badge */
+html:not(.dark) .bg-\[\#18181b\],
+html:not(.dark) .bg-\[\#18181B\] {
   background-color: #e4e4e7 !important;
   color: #18181b !important;
 }
@@ -77,9 +78,9 @@ html:not(.dark) .text-zinc-600 {
 
 /* Borders */
 html:not(.dark) .border-zinc-900,
-html:not(.dark) .border-\[\#1e1e24\],
+html:not(.dark) .border-\[\#1E1E24\],
 html:not(.dark) .border-\[\#232327\],
-html:not(.dark) .border-\[\#29292f\],
+html:not(.dark) .border-\[\#29292F\],
 html:not(.dark) .border-zinc-800,
 html:not(.dark) .border-zinc-850 {
   border-color: #e4e4e7 !important;
@@ -96,4 +97,142 @@ html:not(.dark) .rounded-2xl {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
+}
+
+/* Light mode overrides for background colors */
+html:not(.dark) .bg-\[\#0c0c0e\],
+html:not(.dark) .bg-\[\#0C0C0E\],
+html:not(.dark) .bg-\[\#0b0b0d\],
+html:not(.dark) .bg-\[\#0B0B0D\],
+html:not(.dark) .bg-\[\#0c0c0f\],
+html:not(.dark) .bg-\[\#0C0C0F\],
+html:not(.dark) .bg-\[\#0a0a0a\],
+html:not(.dark) .bg-\[\#0A0A0A\],
+html:not(.dark) .bg-\[\#08080a\],
+html:not(.dark) .bg-\[\#08080A\],
+html:not(.dark) .bg-\[\#101014\],
+html:not(.dark) .bg-\[\#101014\],
+html:not(.dark) .bg-white\/5 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-\[\#050507\],
+html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#0A0A0C\],
+html:not(.dark) .bg-\[\#101118\],
+html:not(.dark) .bg-\[\#141416\] {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .bg-\[\#1d1d22\],
+html:not(.dark) .bg-\[\#1D1D22\],
+html:not(.dark) .bg-zinc-800,
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-900\/40,
+html:not(.dark) .bg-zinc-900\/20,
+html:not(.dark) .bg-zinc-900\/50,
+html:not(.dark) .bg-\[\#18181b\]\/50,
+html:not(.dark) .bg-\[\#18181B\]\/50 {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+html:not(.dark) .bg-\[\#1b0b0e\]\/35,
+html:not(.dark) .bg-\[\#1B0B0E\]\/35 {
+  background-color: #fee2e2 !important; /* Overdue row light red background */
+}
+
+/* Light mode overrides for hovers */
+html:not(.dark) .hover\:bg-white\/5:hover,
+html:not(.dark) .hover\:bg-zinc-900\/50:hover,
+html:not(.dark) .hover\:bg-zinc-900\/40:hover,
+html:not(.dark) .hover\:bg-\[\#1f1f24\]:hover,
+html:not(.dark) .hover\:bg-\[\#1F1F24\]:hover,
+html:not(.dark) .hover\:bg-\[\#0c0c0e\]:hover,
+html:not(.dark) .hover\:bg-\[\#0C0C0E\]:hover,
+html:not(.dark) .hover\:bg-\[\#1a1a20\]:hover,
+html:not(.dark) .hover\:bg-\[\#1A1A20\]:hover {
+  background-color: #e4e4e7 !important;
+}
+
+/* Light mode overrides for border colors */
+html:not(.dark) .border-zinc-900,
+html:not(.dark) .border-\[\#1e1e24\],
+html:not(.dark) .border-\[\#1E1E24\],
+html:not(.dark) .border-\[\#232327\],
+html:not(.dark) .border-\[\#29292f\],
+html:not(.dark) .border-\[\#29292F\],
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-850,
+html:not(.dark) .border-zinc-800\/80,
+html:not(.dark) .border-\[\#2a2a30\],
+html:not(.dark) .border-\[\#2A2A30\] {
+  border-color: #e4e4e7 !important;
+}
+
+/* Custom Select in Admin Page */
+.admin-select-button {
+  background-color: #050507 !important;
+  border: 1px solid #232327 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .admin-select-button {
+  background-color: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+.admin-select-dropdown {
+  background-color: #101014 !important;
+  border: 1px solid #2a2a30 !important;
+}
+html:not(.dark) .admin-select-dropdown {
+  background-color: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+}
+
+.admin-select-option {
+  background-color: transparent !important;
+  color: #d4d4d8 !important;
+}
+.admin-select-option[data-selected="true"] {
+  background-color: #1a1a22 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .admin-select-option {
+  background-color: transparent !important;
+  color: #71717a !important;
+}
+html:not(.dark) .admin-select-option[data-selected="true"] {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+/* Custom Toggle in Admin Page */
+.admin-toggle-button[data-active="true"] {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .admin-toggle-button[data-active="true"] {
+  background-color: #09090b !important;
+}
+
+.admin-toggle-button[data-active="false"] {
+  background-color: #3f3f46 !important;
+}
+html:not(.dark) .admin-toggle-button[data-active="false"] {
+  background-color: #e4e4e7 !important;
+}
+
+.admin-toggle-dot[data-active="true"] {
+  background-color: #0c0c0f !important;
+}
+html:not(.dark) .admin-toggle-dot[data-active="true"] {
+  background-color: #ffffff !important;
+}
+
+.admin-toggle-dot[data-active="false"] {
+  background-color: #a1a1aa !important;
+}
+html:not(.dark) .admin-toggle-dot[data-active="false"] {
+  background-color: #ffffff !important;
 }

@@ -149,7 +149,13 @@ export default function CallsLayout({ children }: { children: React.ReactNode })
                         {/* Profile and Logout */}
                         <div className="space-y-5 pt-5 border-t border-[#18181b]/60">
                             {/* User Details */}
-                            <div className="flex items-center gap-3 px-2">
+                            <div 
+                                onClick={() => {
+                                    router.push("/profile");
+                                    setIsSidebarOpen(false);
+                                }}
+                                className="flex items-center gap-3 px-2 cursor-pointer hover:opacity-80 transition-all"
+                            >
                                 <div className="w-[38px] h-[38px] rounded-full bg-[#18181b] border border-zinc-800 flex items-center justify-center text-sm font-extrabold text-zinc-300">
                                     {user?.first_name ? user.first_name[0].toUpperCase() : "U"}
                                 </div>

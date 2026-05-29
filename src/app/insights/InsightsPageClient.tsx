@@ -122,7 +122,7 @@ export default function InsightsPageClient() {
 
     // Re-fetch when category/agentId changes
     useEffect(() => {
-        if (!isLoading) {
+        if (!isLoading && settings?.enable_ai_insights !== false) {
             if (pollingRef.current) clearInterval(pollingRef.current);
             setActiveTab("revenue");
             setReportData(null);
@@ -131,7 +131,7 @@ export default function InsightsPageClient() {
             setAllReports([]);
             loadLatestReport(true, agentId);
         }
-    }, [category, agentId, loadLatestReport, isLoading]);
+    }, [category, agentId, loadLatestReport, isLoading, settings?.enable_ai_insights]);
 
     // Poll for report in progress
     const startPolling = useCallback((reportId: string) => {
@@ -341,7 +341,13 @@ export default function InsightsPageClient() {
                         {/* Profile and Logout */}
                         <div className="space-y-5 pt-5 border-t border-[#18181b]/60">
                             {/* User Details */}
-                            <div className="flex items-center gap-3 px-2">
+                            <div 
+                                onClick={() => {
+                                    router.push("/profile");
+                                    setIsSidebarOpen(false);
+                                }}
+                                className="flex items-center gap-3 px-2 cursor-pointer hover:opacity-80 transition-all"
+                            >
                                 <div className="w-[38px] h-[38px] rounded-full bg-[#18181b] flex items-center justify-center text-sm font-extrabold text-zinc-300">
                                     {user?.first_name ? user.first_name[0].toUpperCase() : "U"}
                                 </div>
@@ -372,35 +378,49 @@ export default function InsightsPageClient() {
                     </aside>
 
                     {/* ================= RIGHT WORKSPACE ================= */}
-                    <div className="flex-grow flex flex-col overflow-hidden min-w-0">
-                        {/* Header */}
-                        <InsightsHeader
-                            category={category}
-                            onCategoryChange={(cat) => setCategory(cat)}
-                            allReports={allReports}
-                            historyOpen={historyOpen}
-                            onToggleHistory={() => setHistoryOpen((v) => !v)}
-                            viewingHistory={viewingHistory}
-                            onSelectHistory={handleSelectHistory}
-                            onBackToLatest={handleBackToLatest}
-                        />
-
-                        {/* Dashboard content */}
-                        <main className="flex-grow flex-1 min-w-0 overflow-auto">
-                            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-                                <InsightsDashboard
-                                    reportData={reportData}
-                                    loading={loading}
-                                    error={error}
-                                    agentId={agentId}
-                                    activeTab={activeTab}
-                                    onTabChange={setActiveTab}
-                                    onGenerateReport={generateReport}
-                                    category={category}
-                                />
+                    {settings?.enable_ai_insights === false ? (
+                        <div className="flex-grow flex items-center justify-center bg-[#050505] text-white">
+                            <div className="flex flex-col items-center gap-4 text-center">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800/60 border border-zinc-700/40">
+                                    <Ban size={32} className="text-zinc-500" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">AI Insights Disabled</h2>
+                                    <p className="text-sm text-zinc-500 mt-1">This feature has been disabled from the Admin Panel.</p>
+                                </div>
                             </div>
-                        </main>
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="flex-grow flex flex-col overflow-hidden min-w-0">
+                            {/* Header */}
+                            <InsightsHeader
+                                category={category}
+                                onCategoryChange={(cat) => setCategory(cat)}
+                                allReports={allReports}
+                                historyOpen={historyOpen}
+                                onToggleHistory={() => setHistoryOpen((v) => !v)}
+                                viewingHistory={viewingHistory}
+                                onSelectHistory={handleSelectHistory}
+                                onBackToLatest={handleBackToLatest}
+                            />
+
+                            {/* Dashboard content */}
+                            <main className="flex-grow flex-1 min-w-0 overflow-auto">
+                                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+                                    <InsightsDashboard
+                                        reportData={reportData}
+                                        loading={loading}
+                                        error={error}
+                                        agentId={agentId}
+                                        activeTab={activeTab}
+                                        onTabChange={setActiveTab}
+                                        onGenerateReport={generateReport}
+                                        category={category}
+                                    />
+                                </div>
+                            </main>
+                        </div>
+                    )}
                 </div>
             </div>
         </PageContainer>

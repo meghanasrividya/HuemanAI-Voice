@@ -7,8 +7,7 @@ export const callInsightsApi = {
         limit = 50,
         category: "Reservation" | "Feedback" = "Reservation"
     ): Promise<{ reports: CallReport[] }> {
-        const endpoint = category === "Feedback" ? "/insights/Feedback" : "/insights/Reservation";
-        const response = await apiClient.get(endpoint, {
+        const response = await apiClient.get("/insights/calls", {
             params: { agentId, limit },
         });
         return response.data;

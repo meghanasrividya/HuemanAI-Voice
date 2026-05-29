@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 
 const BACKEND_BASE = "https://voice.huemanai.co.uk";
-const BACKEND_URL = `${BACKEND_BASE}/api/organisation/settings`;
+const BACKEND_URL = `${BACKEND_BASE}/api/admin/settings`;
 
 const FALLBACK_SETTINGS = {
   settings: {
