@@ -13,7 +13,7 @@ export default function CallsPagination({
   totalPages,
   totalCallsCount
 }: CallsPaginationProps) {
-  // Generate the page numbers sequence: e.g. 1, 2, ..., 110
+  // Generate the page numbers sequence dynamically based on current page and total pages
   const renderPageNumbers = () => {
     const pages = [];
     
@@ -22,102 +22,51 @@ export default function CallsPagination({
       <button
         key={1}
         onClick={() => setCurrentPage(1)}
-        className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer border ${
+        className={`w-9 h-7 flex items-center justify-center rounded-[10px] text-xs font-bold transition-all cursor-pointer border ${
           currentPage === 1
             ? "bg-white border-white text-black font-extrabold"
-            : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700"
+            : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-300 hover:text-white hover:border-zinc-700"
         }`}
       >
         1
       </button>
     );
 
-    // Render left dots if current page is far from beginning
-    if (currentPage > 3) {
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+
+    // Render left dots if start of middle range is far from page 1
+    if (start > 2) {
       pages.push(
-        <span key="dots-left" className="w-7 h-7 flex items-center justify-center text-zinc-600 text-xs font-bold select-none">
+        <span key="dots-left" className="w-9 h-7 flex items-center justify-center text-zinc-600 text-xs font-bold select-none">
           ...
         </span>
       );
-    } else if (totalPages > 2 && currentPage === 3 && currentPage !== totalPages) {
-      pages.push(
-        <button
-          key={2}
-          onClick={() => setCurrentPage(2)}
-          className="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer border border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700"
-        >
-          2
-        </button>
-      );
-    } else if (totalPages > 2 && currentPage === 1) {
-      // Show page 2 if we are on page 1 for smooth transition
-      pages.push(
-        <button
-          key={2}
-          onClick={() => setCurrentPage(2)}
-          className="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold border border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700 transition-all cursor-pointer"
-        >
-          2
-        </button>
-      );
     }
 
-    // Render middle current page if it is not page 1 or totalPages
-    if (currentPage > 1 && currentPage < totalPages) {
-      if (currentPage !== 2) {
-        pages.push(
-          <button
-            key={currentPage}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-xs font-extrabold bg-white border border-white text-black transition-all"
-          >
-            {currentPage}
-          </button>
-        );
-      } else {
-        pages.push(
-          <button
-            key={2}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-xs font-extrabold bg-white border border-white text-black transition-all"
-          >
-            2
-          </button>
-        );
-      }
-    }
-
-    // Render right dots if current page is far from end
-    if (currentPage < totalPages - 2) {
-      pages.push(
-        <span key="dots-right" className="w-7 h-7 flex items-center justify-center text-zinc-600 text-xs font-bold select-none">
-          ...
-        </span>
-      );
-    } else if (currentPage === totalPages - 2 && totalPages > 3) {
-      const penUltimate = totalPages - 1;
+    // Render middle pages in the sliding window range [start, end]
+    for (let p = start; p <= end; p++) {
       pages.push(
         <button
-          key={penUltimate}
-          onClick={() => setCurrentPage(penUltimate)}
-          className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer border ${
-            currentPage === penUltimate
+          key={p}
+          onClick={() => setCurrentPage(p)}
+          className={`w-9 h-7 flex items-center justify-center rounded-[10px] text-xs font-bold transition-all cursor-pointer border ${
+            currentPage === p
               ? "bg-white border-white text-black font-extrabold"
-              : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700"
+              : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-300 hover:text-white hover:border-zinc-700"
           }`}
         >
-          {penUltimate}
+          {p}
         </button>
       );
-    } else if (currentPage === totalPages && totalPages > 2) {
-      // Show second to last page if we are on the last page
-      const secondToLast = totalPages - 1;
+    }
+
+    // Render right dots if end of middle range is far from last page
+    if (end < totalPages - 1) {
       pages.push(
-        <button
-          key={secondToLast}
-          onClick={() => setCurrentPage(secondToLast)}
-          className="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold border border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700 transition-all cursor-pointer"
-        >
-          {secondToLast}
-        </button>
+        <span key="dots-right" className="w-9 h-7 flex items-center justify-center text-zinc-600 text-xs font-bold select-none">
+          ...
+        </span>
       );
     }
 
@@ -127,10 +76,10 @@ export default function CallsPagination({
         <button
           key={totalPages}
           onClick={() => setCurrentPage(totalPages)}
-          className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer border ${
+          className={`w-9 h-7 flex items-center justify-center rounded-[10px] text-xs font-bold transition-all cursor-pointer border ${
             currentPage === totalPages
               ? "bg-white border-white text-black font-extrabold"
-              : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-400 hover:text-white hover:border-zinc-700"
+              : "border-[#1f1f23] bg-[#0a0a0c] text-zinc-300 hover:text-white hover:border-zinc-700"
           }`}
         >
           {totalPages}
@@ -147,18 +96,18 @@ export default function CallsPagination({
         Showing page {currentPage} of {totalPages} ({totalCallsCount} total results)
       </span>
 
-      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold">
+      <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-bold">
         {/* Previous Page Button */}
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((p: number) => Math.max(p - 1, 1))}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#1f1f23] text-zinc-400 hover:text-white hover:border-zinc-800 transition-colors disabled:opacity-30 disabled:pointer-events-none bg-[#0a0a0c] cursor-pointer text-xs"
+          className="flex items-center justify-center gap-1 px-4 h-9 rounded-full border border-zinc-800 bg-[#0a0a0c] text-white hover:text-zinc-200 hover:border-zinc-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-xs font-bold"
         >
           <span>&lt; Previous</span>
         </button>
 
         {/* Dynamic page numbers */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1.5">
           {renderPageNumbers()}
         </div>
 
@@ -166,7 +115,7 @@ export default function CallsPagination({
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage((p: number) => Math.min(p + 1, totalPages))}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#1f1f23] text-zinc-400 hover:text-white hover:border-zinc-800 transition-colors disabled:opacity-30 disabled:pointer-events-none bg-[#0a0a0c] cursor-pointer text-xs"
+          className="flex items-center justify-center gap-1 px-4 h-9 rounded-full border border-zinc-800 bg-[#0a0a0c] text-white hover:text-zinc-200 hover:border-zinc-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-xs font-bold"
         >
           <span>Next &gt;</span>
         </button>

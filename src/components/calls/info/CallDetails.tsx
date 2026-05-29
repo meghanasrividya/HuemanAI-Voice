@@ -285,25 +285,25 @@ export default function CallDetails({ callId }: Props) {
             const rawLinkedActions = raw.linked_actions || [];
             const mappedLinkedActions = Array.isArray(rawLinkedActions)
               ? rawLinkedActions.map((act: any) => {
-                  let formattedActCreatedAt = "";
-                  if (act.created_at) {
-                    const d = new Date(act.created_at.replace(" ", "T") + "Z");
-                    if (!isNaN(d.getTime())) {
-                      const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-                      formattedActCreatedAt = `CREATED ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-                    }
+                let formattedActCreatedAt = "";
+                if (act.created_at) {
+                  const d = new Date(act.created_at.replace(" ", "T") + "Z");
+                  if (!isNaN(d.getTime())) {
+                    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                    formattedActCreatedAt = `CREATED ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
                   }
-                  
-                  return {
-                    id: act.id,
-                    guestName: act.guest_name || "",
-                    requestType: act.request_type || "",
-                    priority: act.priority || "",
-                    status: act.status || "",
-                    createdAt: formattedActCreatedAt,
-                    notes: act.notes || "",
-                  };
-                })
+                }
+
+                return {
+                  id: act.id,
+                  guestName: act.guest_name || "",
+                  requestType: act.request_type || "",
+                  priority: act.priority || "",
+                  status: act.status || "",
+                  createdAt: formattedActCreatedAt,
+                  notes: act.notes || "",
+                };
+              })
               : [];
 
             apiData = {
@@ -697,7 +697,7 @@ export default function CallDetails({ callId }: Props) {
             topQueries={data.topQueries}
             keyInsights={data.keyInsights}
           />
-           <ReservationDetailsCard
+          <ReservationDetailsCard
             guestName={data.guestName}
             requestType={data.requestType}
             issueSummary={data.issueSummary}
@@ -719,6 +719,7 @@ export default function CallDetails({ callId }: Props) {
             type={data.type}
             sentiment={data.sentiment}
             hasLinkedActions={!!(data.linkedActions && data.linkedActions.length > 0)}
+            category={data.category}
           />
           {data.linkedActions && data.linkedActions.length > 0 && (
             <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl p-5 space-y-4">
@@ -737,23 +738,22 @@ export default function CallDetails({ callId }: Props) {
                         <span className="text-sm text-white font-bold">
                           Action #{act.id}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                          act.status.toLowerCase() === "resolved"
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${act.status.toLowerCase() === "resolved"
                             ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
                             : act.status.toLowerCase() === "open"
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                               : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                        }`}>
+                          }`}>
                           {act.status.charAt(0).toUpperCase() + act.status.slice(1)}
                         </span>
                       </div>
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0"
                       >
                         <path d="M15 3h6v6" />
@@ -761,23 +761,22 @@ export default function CallDetails({ callId }: Props) {
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                       </svg>
                     </div>
-                    
+
                     <p className="text-xs text-zinc-400 italic font-medium">
                       {act.requestType}
                     </p>
-                    
+
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] text-zinc-500 font-extrabold tracking-widest uppercase">
                         {act.createdAt}
                       </span>
                       <span className="text-zinc-600 text-xs select-none">•</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
                           ? "bg-red-500/10 text-red-400 border-red-500/20"
                           : act.priority.toLowerCase() === "medium"
                             ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                             : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
-                      }`}>
+                        }`}>
                         {act.priority.toUpperCase()}
                       </span>
                     </div>
@@ -829,7 +828,7 @@ export default function CallDetails({ callId }: Props) {
             topQueries={data.topQueries}
             keyInsights={data.keyInsights}
           />
-           <ReservationDetailsCard
+          <ReservationDetailsCard
             guestName={data.guestName}
             requestType={data.requestType}
             issueSummary={data.issueSummary}
@@ -851,6 +850,7 @@ export default function CallDetails({ callId }: Props) {
             type={data.type}
             sentiment={data.sentiment}
             hasLinkedActions={!!(data.linkedActions && data.linkedActions.length > 0)}
+            category={data.category}
           />
           {data.linkedActions && data.linkedActions.length > 0 && (
             <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl p-5 space-y-4">
@@ -869,23 +869,22 @@ export default function CallDetails({ callId }: Props) {
                         <span className="text-sm text-white font-bold">
                           Action #{act.id}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                          act.status.toLowerCase() === "resolved"
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${act.status.toLowerCase() === "resolved"
                             ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
                             : act.status.toLowerCase() === "open"
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                               : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                        }`}>
+                          }`}>
                           {act.status.charAt(0).toUpperCase() + act.status.slice(1)}
                         </span>
                       </div>
-                      <svg 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 flex-shrink-0"
                       >
                         <path d="M15 3h6v6" />
@@ -893,23 +892,22 @@ export default function CallDetails({ callId }: Props) {
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                       </svg>
                     </div>
-                    
+
                     <p className="text-xs text-zinc-400 italic font-medium">
                       {act.requestType}
                     </p>
-                    
+
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] text-zinc-500 font-extrabold tracking-widest uppercase">
                         {act.createdAt}
                       </span>
                       <span className="text-zinc-600 text-xs select-none">•</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
                           ? "bg-red-500/10 text-red-400 border-red-500/20"
                           : act.priority.toLowerCase() === "medium"
                             ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                             : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
-                      }`}>
+                        }`}>
                         {act.priority.toUpperCase()}
                       </span>
                     </div>

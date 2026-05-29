@@ -207,7 +207,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
       {/* ── Main Waveform Scrubber ── */}
       <div
         onClick={handleWaveformClick}
-        className="relative h-[132px] bg-[#0a0a0c] rounded-xl border border-zinc-900/50 flex items-center gap-[1.5px] cursor-pointer select-none overflow-hidden px-2"
+        className="relative h-[120px] bg-[#0e0e10] rounded-2xl border border-zinc-800/70 flex items-center gap-[2px] cursor-pointer select-none overflow-hidden px-3"
       >
         {/* Playhead line */}
         <div
@@ -215,7 +215,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
           style={{ left: `${progressPct}%` }}
         />
 
-        {/* Waveform bars — centered vertically, tightly packed */}
+        {/* Waveform bars — center-aligned, tightly packed */}
         {waveformBars.map((h, i) => {
           const barPct = (i / waveformBars.length) * 100;
           const played = barPct <= progressPct;
@@ -225,9 +225,9 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
               className="flex-1 rounded-full"
               style={{
                 height: `${h}%`,
-                backgroundColor: played ? "#ffffff" : "#454550",
-                maxHeight: "90%",
-                minHeight: "5%",
+                backgroundColor: played ? "#d4d4d8" : "#3f3f46",
+                maxHeight: "88%",
+                minHeight: "6%",
                 transition: "background-color 0.08s",
               }}
             />
@@ -235,22 +235,21 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
         })}
       </div>
 
-      {/* ── Dynamic Mini-Pillars (bottom row) ── */}
-      {/* Medium gray, rounded top, bottom-aligned, height scales with duration */}
-      {recordingUrl && durationSeconds > 0 && (
-        <div className="flex items-end gap-[1.5px] h-10 w-full">
-          {miniPillars.map((h, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-t-sm"
-              style={{
-                height: `${h}%`,
-                backgroundColor: "#5a5a62",
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* ── Bottom Pill Segments Row ── */}
+      <div className="flex items-end gap-[3px] h-9 w-full">
+        {miniPillars.map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-md"
+            style={{
+              height: `${h}%`,
+              backgroundColor: "#4a4a52",
+              minHeight: "28%",
+              maxHeight: "88%",
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

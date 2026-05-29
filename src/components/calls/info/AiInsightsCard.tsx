@@ -94,13 +94,13 @@ export default function AiInsightsCard({
                 key={i}
                 className="flex items-center justify-between border border-zinc-800/60 bg-[#0f0f11] rounded-lg px-4 py-2.5"
               >
-                <span className="text-sm text-zinc-200 font-semibold">{row.label}</span>
+                <span className="text-sm text-zinc-200 font-semibold select-text cursor-text">{row.label}</span>
                 {row.value && row.value.toLowerCase().includes("cancel") ? (
-                  <span className="text-xs sm:text-sm font-bold border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] px-3.5 py-1 rounded-full">
+                  <span className="text-xs sm:text-sm font-bold border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] px-3.5 py-1 rounded-full select-text cursor-text">
                     {row.value}
                   </span>
                 ) : (
-                  <span className="text-sm text-white font-bold">{row.value}</span>
+                  <span className="text-sm text-white font-bold select-text cursor-text">{row.value}</span>
                 )}
               </div>
             ))}
@@ -117,7 +117,7 @@ export default function AiInsightsCard({
           {allergies && (
             <div className="space-y-1.5">
               <div className="text-xs text-[#ef4444] font-extrabold uppercase tracking-wider">ALLERGIES:</div>
-              <div className="inline-flex border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] text-xs sm:text-sm font-bold px-4 py-1.5 rounded-full">
+              <div className="inline-flex border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] text-xs sm:text-sm font-bold px-4 py-1.5 rounded-full select-text cursor-text">
                 {allergies}
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function AiInsightsCard({
           {specialNotes && (
             <div className="space-y-1">
               <div className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">Notes:</div>
-              <p className="text-sm text-zinc-200 font-medium leading-relaxed pl-0.5">
+              <p className="text-sm text-zinc-200 font-medium leading-relaxed pl-0.5 select-text cursor-text">
                 {specialNotes}
               </p>
             </div>
@@ -143,7 +143,7 @@ export default function AiInsightsCard({
             {bullets.map((b, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-zinc-300 leading-relaxed">
                 <span className="text-zinc-500 mt-0.5 flex-shrink-0">•</span>
-                <span>{b}</span>
+                <span className="select-text cursor-text">{b}</span>
               </li>
             ))}
           </ul>
