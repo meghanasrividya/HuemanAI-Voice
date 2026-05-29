@@ -168,22 +168,6 @@ export default function InsightsDashboard({
                 ::-webkit-scrollbar-thumb:hover {
                     background-color: #71717a;
                 }
-                ::-webkit-scrollbar-button:vertical:decrement {
-                    display: block;
-                    background-color: #1e1e24;
-                    height: 14px;
-                    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgb(161,161,170)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m18 15-6-6-6 6'/></svg>");
-                    background-position: center;
-                    background-repeat: no-repeat;
-                }
-                ::-webkit-scrollbar-button:vertical:increment {
-                    display: block;
-                    background-color: #1e1e24;
-                    height: 14px;
-                    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgb(161,161,170)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
-                    background-position: center;
-                    background-repeat: no-repeat;
-                }
 
                 @media print {
                     @page {

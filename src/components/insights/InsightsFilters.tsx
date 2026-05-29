@@ -44,7 +44,7 @@ type Props = {
 
 export default function InsightsFilters({ activeTab, onTabChange, counts }: Props) {
     return (
-        <div className="flex w-full flex-wrap gap-1 rounded-xl border border-zinc-900 bg-[#0b0b0d] p-1">
+        <div className="flex w-full flex-wrap gap-1 rounded-xl border border-zinc-900 bg-[#0b0b0d] p-1.5">
             {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -53,7 +53,7 @@ export default function InsightsFilters({ activeTab, onTabChange, counts }: Prop
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}
                         className={cn(
-                            "flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-2.5 rounded-lg px-4 py-2 text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer border border-transparent",
+                            "flex flex-1 sm:flex-none items-center justify-center sm:justify-start gap-3 rounded-lg px-5 py-3 text-sm sm:text-base font-semibold transition-all duration-200 cursor-pointer border border-transparent",
                             active
                                 ? "bg-[#1d1d22] border-zinc-800/40 shadow-sm"
                                 : "text-zinc-400 hover:text-white hover:bg-zinc-900/30"
@@ -61,7 +61,7 @@ export default function InsightsFilters({ activeTab, onTabChange, counts }: Prop
                     >
                         <Icon
                             className={cn(
-                                "h-4 w-4 shrink-0",
+                                "h-5 w-5 shrink-0",
                                 active ? tab.activeColor : "text-zinc-500"
                             )}
                         />
@@ -74,7 +74,7 @@ export default function InsightsFilters({ activeTab, onTabChange, counts }: Prop
                         {counts[tab.id] > 0 && (
                             <span
                                 className={cn(
-                                    "inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                    "inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-bold",
                                     active
                                         ? cn(tab.activeBg, tab.activeColor)
                                         : "bg-zinc-900 text-zinc-500"

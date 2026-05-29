@@ -141,24 +141,24 @@ function RecommendationCard({
                         onMouseEnter={() => setBadgeHovered(true)}
                         onMouseLeave={() => setBadgeHovered(false)}
                         className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider border transition-all duration-200 cursor-pointer",
+                            "text-xs font-bold uppercase tracking-wider border transition-all duration-200 cursor-pointer",
                             badgeHovered ? style.badgeHover : style.badge
                         )}
                     >
                         {style.label}
                     </Badge>
-                    <span className="text-xs font-bold text-zinc-400">
+                    <span className="text-sm font-bold text-zinc-400">
                         #{item.recommendationNumber}
                     </span>
                 </div>
 
-                <span className="flex-1 text-xs sm:text-sm font-medium text-zinc-100 leading-snug line-clamp-2 sm:line-clamp-1">
+                <span className="flex-1 text-sm sm:text-base font-medium text-zinc-100 leading-snug line-clamp-2 sm:line-clamp-1">
                     {displayTitle}
                 </span>
 
                 <ChevronDown
                     className={cn(
-                        "h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200 self-end sm:self-auto",
+                        "h-4.5 w-4.5 shrink-0 text-zinc-400 transition-transform duration-200 self-end sm:self-auto",
                         open && "rotate-180"
                     )}
                 />
@@ -182,7 +182,7 @@ function RecommendationCard({
                                         {item.basedOn.map((ref) => (
                                             <span
                                                 key={ref}
-                                                className="rounded-md border border-[#1e1e24] bg-[#121214] px-2 py-0.5 text-[10px] font-bold text-zinc-300 tracking-wide"
+                                                className="rounded-md border border-[#1e1e24] bg-[#121214] px-2.5 py-1 text-xs font-bold text-zinc-300 tracking-wide"
                                             >
                                                 {ref}
                                             </span>
@@ -195,16 +195,16 @@ function RecommendationCard({
                             {item.opportunity?.description && (
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <Lightbulb className="h-4 w-4 text-emerald-500" />
-                                        <h4 className="text-xs sm:text-sm font-semibold text-[#2dd4bf]">
+                                        <Lightbulb className="h-4.5 w-4.5 text-emerald-500" />
+                                        <h4 className="text-sm font-semibold text-[#2dd4bf]">
                                             Opportunity
                                         </h4>
                                     </div>
-                                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                                    <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
                                         {item.opportunity.description}
                                     </p>
                                     {potentialImpact && (
-                                        <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs sm:text-sm text-emerald-400 leading-relaxed">
+                                        <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3.5 py-2.5 text-sm sm:text-base text-emerald-400 leading-relaxed">
                                             <span className="font-bold">Potential impact:</span> {potentialImpact}
                                         </div>
                                     )}
@@ -215,8 +215,8 @@ function RecommendationCard({
                             {steps.length > 0 && (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
-                                        <SquareCheckBig className="h-4 w-4 text-zinc-300" />
-                                        <h4 className="text-xs sm:text-sm font-semibold text-[#2dd4bf]">
+                                        <SquareCheckBig className="h-4.5 w-4.5 text-zinc-300" />
+                                        <h4 className="text-sm font-semibold text-[#2dd4bf]">
                                             Implementation Plan
                                         </h4>
                                     </div>
@@ -224,12 +224,12 @@ function RecommendationCard({
                                         {steps.map((step, idx) => (
                                             <div
                                                 key={idx}
-                                                className="rounded-xl border border-[#1e1e24] bg-[#121214]/40 p-3 px-4"
+                                                className="rounded-xl border border-[#1e1e24] bg-[#121214]/40 p-3.5 px-4.5"
                                             >
-                                                <span className={cn("text-[10px] sm:text-xs font-bold uppercase tracking-wider", step.color)}>
+                                                <span className={cn("text-xs font-bold uppercase tracking-wider", step.color)}>
                                                     {step.stage}
                                                 </span>
-                                                <div className="flex items-start gap-2 text-xs sm:text-sm text-zinc-300 mt-1.5">
+                                                <div className="flex items-start gap-2 text-sm sm:text-base text-zinc-300 mt-1.5">
                                                     <span className="text-zinc-500 select-none">•</span>
                                                     <p className="leading-relaxed">{step.text}</p>
                                                 </div>
@@ -241,11 +241,11 @@ function RecommendationCard({
 
                             {/* Success Metric */}
                             {item.successMetric && (
-                                <div className="rounded-xl border border-[#1e1e24] bg-[#121214]/30 p-3.5 px-4 space-y-1">
-                                    <h4 className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[#2dd4bf]">
+                                <div className="rounded-xl border border-[#1e1e24] bg-[#121214]/30 p-4 px-4.5 space-y-1">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-[#2dd4bf]">
                                         Success Metric
                                     </h4>
-                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
+                                    <p className="text-sm sm:text-base text-zinc-200 leading-relaxed font-medium">
                                         {item.successMetric}
                                     </p>
                                 </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import React from "react";
+import { Search } from "lucide-react";
 
 interface DropdownOption {
   value: string;
@@ -13,65 +13,30 @@ interface CustomDropdownProps {
   minWidth?: string;
 }
 
-function CustomDropdown({ value, onChange, options, minWidth = "120px" }: CustomDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((o) => o.value === value) || options[0];
-
+function CustomDropdown({ value, onChange, options, minWidth = "140px" }: CustomDropdownProps) {
   return (
-    <div className="relative flex-grow sm:flex-initial" style={{ minWidth }} ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between bg-[#121214] rounded-full py-2 pl-4 pr-10 text-xs font-semibold text-zinc-200 cursor-pointer w-full text-left transition-all focus:outline-none ${
-          isOpen
-            ? "border border-white ring-2 ring-white ring-offset-2 ring-offset-black"
-            : "border border-zinc-800/80 hover:border-zinc-700"
-        }`}
+    <div className="relative flex-grow sm:flex-initial" style={{ minWidth }}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-[#121214] rounded-full py-2 px-4 pr-10 text-sm font-bold text-zinc-200 border border-zinc-800/80 hover:border-zinc-700 cursor-pointer focus:outline-none focus:border-white focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black transition-all appearance-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath stroke='%23a1a1aa' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+          backgroundPosition: 'right 14px center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '16px'
+        }}
       >
-        <span className="truncate">{selectedOption.label}</span>
-        <span className="absolute inset-y-0 right-3.5 flex items-center text-zinc-400 pointer-events-none">
-          <ChevronDown size={13} className="opacity-90" />
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 left-0 right-0 mt-2 bg-[#121214] border border-[#2a2a30] rounded-xl overflow-hidden shadow-xl select-none">
-          {options.map((option, idx) => {
-            const isSelected = option.value === value;
-            const isLast = idx === options.length - 1;
-            return (
-              <div
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`px-4 py-2.5 text-xs font-medium cursor-pointer transition-colors ${
-                  isLast ? "" : "border-b border-[#2a2a30]"
-                } ${
-                  isSelected
-                    ? "bg-[#7cb6ff] text-black"
-                    : "text-zinc-300 hover:bg-[#7cb6ff] hover:text-black"
-                }`}
-              >
-                {option.label}
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+            className="bg-[#121214] text-zinc-300 font-medium py-2"
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -81,6 +46,8 @@ interface CallsFiltersProps {
   setSearchTerm: (val: string) => void;
   categoryFilter: string;
   setCategoryFilter: (val: string) => void;
+  subCategoryFilter: string;
+  setSubCategoryFilter: (val: string) => void;
   directionFilter: string;
   setDirectionFilter: (val: string) => void;
   sortBy: string;
@@ -95,6 +62,8 @@ export default function CallsFilters({
   setSearchTerm,
   categoryFilter,
   setCategoryFilter,
+  subCategoryFilter,
+  setSubCategoryFilter,
   directionFilter,
   setDirectionFilter,
   sortBy,
@@ -106,9 +75,9 @@ export default function CallsFilters({
   return (
     <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between w-full select-none">
       {/* Search Input */}
-      <div className="relative flex-grow max-w-full xl:max-w-[420px]">
-        <span className="absolute inset-y-0 left-3.5 flex items-center text-zinc-500">
-          <Search size={14} className="opacity-70" />
+      <div className="relative flex-grow max-w-full xl:max-w-[460px]">
+        <span className="absolute inset-y-0 left-4 flex items-center text-zinc-500">
+          <Search size={16} className="opacity-70" />
         </span>
         <input
           type="text"
@@ -118,7 +87,7 @@ export default function CallsFilters({
             setSearchTerm(e.target.value);
             setCurrentPage(1);
           }}
-          className="w-full bg-[#121214] border border-zinc-800/60 rounded-full py-2 pl-10 pr-4 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
+          className="w-full bg-[#121214] border border-zinc-800/60 rounded-full py-3 pl-12 pr-6 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
         />
       </div>
 
@@ -135,8 +104,32 @@ export default function CallsFilters({
             { value: "All", label: "All Categories" },
             { value: "Reservation", label: "Reservation" }
           ]}
-          minWidth="140px"
+          minWidth="160px"
         />
+
+        {/* Reservation Outcomes Dropdown - Shows only when Reservation category is selected */}
+        {categoryFilter === "Reservation" && (
+          <CustomDropdown
+            value={subCategoryFilter}
+            onChange={(val) => {
+              setSubCategoryFilter(val);
+              setCurrentPage(1);
+            }}
+            options={[
+              { value: "All", label: "All Reservation Outcomes" },
+              { value: "Booking Secured", label: "Booking Secured" },
+              { value: "Enquiry Handled", label: "Enquiry Handled" },
+              { value: "Large Party Bookings", label: "Large Party Bookings" },
+              { value: "Promotional / Offer", label: "Promotional / Offer" },
+              { value: "Transferred to Staff", label: "Transferred to Staff" },
+              { value: "Booking Cancelled", label: "Booking Cancelled" },
+              { value: "General Assistance", label: "General Assistance" },
+              { value: "Calls After Hours", label: "Calls After Hours" },
+              { value: "Successful Upsells", label: "Successful Upsells" }
+            ]}
+            minWidth="230px"
+          />
+        )}
 
         {/* Direction Dropdown */}
         <CustomDropdown
@@ -150,19 +143,19 @@ export default function CallsFilters({
             { value: "Inbound", label: "Inbound" },
             { value: "Outbound", label: "Outbound" }
           ]}
-          minWidth="130px"
+          minWidth="150px"
         />
 
         {/* Sort By Section */}
         <div className="flex gap-3 items-center flex-1 sm:flex-initial">
-          <span className="text-zinc-500 text-xs font-semibold whitespace-nowrap">Sort by:</span>
+          <span className="text-zinc-400 text-sm font-semibold whitespace-nowrap">Sort by:</span>
           <CustomDropdown
             value={sortBy}
             onChange={(val) => setSortBy(val)}
             options={[
               { value: "Call Date", label: "Call Date" }
             ]}
-            minWidth="120px"
+            minWidth="140px"
           />
         </div>
 
@@ -174,7 +167,7 @@ export default function CallsFilters({
             { value: "Descending", label: "Descending" },
             { value: "Ascending", label: "Ascending" }
           ]}
-          minWidth="120px"
+          minWidth="140px"
         />
       </div>
     </div>

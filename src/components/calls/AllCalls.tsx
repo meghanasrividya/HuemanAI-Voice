@@ -47,7 +47,9 @@ export default function AllCalls() {
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [subCategoryFilter, setSubCategoryFilter] = useState("All");
   const [directionFilter, setDirectionFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Call Date");
   const [sortOrder, setSortOrder] = useState("Descending");
@@ -55,6 +57,23 @@ export default function AllCalls() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  // Debounce search term to prevent rapid API requests while typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Reset page when category or direction or subcategory filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    if (categoryFilter !== "Reservation") {
+      setSubCategoryFilter("All");
+    }
+  }, [categoryFilter, directionFilter, subCategoryFilter]);
 
   // Unmasking state (which phone numbers are visible)
   const [unmaskedCallers, setUnmaskedCallers] = useState<Record<string, boolean>>({});
@@ -93,19 +112,41 @@ export default function AllCalls() {
       const sort_by = sortBy === "Call Date" ? "call_start_time" : sortBy === "Duration" ? "duration" : "sentiment";
       const sort_order = sortOrder === "Descending" ? "DESC" : "ASC";
 
-      console.log("Fetching live calls from API (POST) with payload:", {
+      const payload: any = {
         page: currentPage,
         limit: itemsPerPage,
         sort_by,
         sort_order
-      });
+      };
 
-      const response = await apiClient.post("/calls", {
-        page: currentPage,
-        limit: itemsPerPage,
-        sort_by,
-        sort_order
-      });
+      if (debouncedSearch.trim() !== "") {
+        payload.search = debouncedSearch.trim();
+        payload.q = debouncedSearch.trim();
+        payload.query = debouncedSearch.trim();
+        payload.search_term = debouncedSearch.trim();
+      }
+
+      if (categoryFilter !== "All") {
+        payload.category = categoryFilter;
+        payload.category_filter = categoryFilter;
+
+        if (subCategoryFilter !== "All") {
+          payload.sub_category = subCategoryFilter;
+          payload.subCategory = subCategoryFilter;
+          payload.reservation_outcome = subCategoryFilter;
+          payload.outcome = subCategoryFilter;
+        }
+      }
+
+      if (directionFilter !== "All") {
+        payload.direction = directionFilter.toLowerCase();
+        payload.call_direction = directionFilter.toLowerCase();
+        payload.direction_filter = directionFilter.toLowerCase();
+      }
+
+      console.log("Fetching live calls from API (POST) with payload:", payload);
+
+      const response = await apiClient.post("/calls", payload);
 
       // Extract dynamic total count from API response supporting nested objects, strings, and numbers
       if (response && response.data && typeof response.data === "object") {
@@ -216,15 +257,18 @@ export default function AllCalls() {
           }
 
           // Parse dynamic sentiments from string or number
-          let sentimentVal = "Neutral";
-          if (c.sentiment !== undefined && c.sentiment !== null) {
+          const isReservation = String(c.category || "").trim().toLowerCase() === "reservation";
+          let sentimentVal = isReservation ? "Neutral" : "N/A";
+
+          if (c.sentiment !== undefined && c.sentiment !== null && String(c.sentiment).trim() !== "") {
             if (typeof c.sentiment === "number") {
               if (c.sentiment > 0.5) sentimentVal = "Positive";
               else if (c.sentiment < 0.5) sentimentVal = "Negative";
-              else sentimentVal = "Neutral";
+              else sentimentVal = isReservation ? "Neutral" : "N/A";
             } else {
               const strSent = String(c.sentiment).trim();
-              sentimentVal = strSent.charAt(0).toUpperCase() + strSent.slice(1).toLowerCase();
+              const formatted = strSent.charAt(0).toUpperCase() + strSent.slice(1).toLowerCase();
+              sentimentVal = formatted === "Neutral" ? (isReservation ? "Neutral" : "N/A") : formatted;
             }
           }
 
@@ -265,7 +309,7 @@ export default function AllCalls() {
     }, 150000);
 
     return () => clearInterval(intervalId);
-  }, [currentPage, sortBy, sortOrder]);
+  }, [currentPage, sortBy, sortOrder, debouncedSearch, categoryFilter, directionFilter, subCategoryFilter]);
 
   const handleRefresh = () => {
     fetchLiveCalls(true);
@@ -288,24 +332,8 @@ export default function AllCalls() {
   };
 
   const filteredCalls = useMemo(() => {
-    return calls.filter((call) => {
-      const matchesSearch =
-        (call.caller?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (call.phone || "").includes(searchTerm) ||
-        (call.category?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-        (call.subCategory?.toLowerCase() || "").includes(searchTerm.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === "All" ||
-        call.category === categoryFilter;
-
-      const matchesDirection =
-        directionFilter === "All" ||
-        call.direction === directionFilter;
-
-      return matchesSearch && matchesCategory && matchesDirection;
-    });
-  }, [calls, searchTerm, categoryFilter, directionFilter]);
+    return calls;
+  }, [calls]);
 
   const sortedCalls = useMemo(() => {
     const sorted = [...filteredCalls];
@@ -328,44 +356,34 @@ export default function AllCalls() {
   }, [filteredCalls, sortBy, sortOrder]);
 
   const totalCallsCount = useMemo(() => {
-    // If client-side search/filter is active, reflect the current filtered size
-    const isFilterActive = searchTerm !== "" || categoryFilter !== "All" || directionFilter !== "All";
-    return isFilterActive ? sortedCalls.length : totalCalls;
-  }, [sortedCalls.length, totalCalls, searchTerm, categoryFilter, directionFilter]);
+    return totalCalls;
+  }, [totalCalls]);
 
   const totalPages = useMemo(() => {
-    const isFilterActive = searchTerm !== "" || categoryFilter !== "All" || directionFilter !== "All";
-    return isFilterActive
-      ? Math.max(Math.ceil(sortedCalls.length / itemsPerPage), 1)
-      : Math.max(Math.ceil(totalCalls / itemsPerPage), 1);
-  }, [sortedCalls.length, totalCalls, itemsPerPage, searchTerm, categoryFilter, directionFilter]);
+    return Math.max(Math.ceil(totalCalls / itemsPerPage), 1);
+  }, [totalCalls, itemsPerPage]);
 
   const displayedCalls = useMemo(() => {
-    // Since the API already paginates the results (returning exactly 20 calls matching the requested page/limit),
-    // we don't need to slice the calls array locally on the client side unless a local search filter is active.
-    const isFilterActive = searchTerm !== "" || categoryFilter !== "All" || directionFilter !== "All";
-    if (isFilterActive) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      return sortedCalls.slice(startIndex, startIndex + itemsPerPage);
-    }
     return sortedCalls;
-  }, [sortedCalls, currentPage, itemsPerPage, searchTerm, categoryFilter, directionFilter]);
+  }, [sortedCalls]);
 
   // Check if any filters are currently active/applied
   const hasFiltersApplied = useMemo(() => {
     return (
       searchTerm !== "" ||
       categoryFilter !== "All" ||
+      subCategoryFilter !== "All" ||
       directionFilter !== "All" ||
       sortBy !== "Call Date" ||
       sortOrder !== "Descending"
     );
-  }, [searchTerm, categoryFilter, directionFilter, sortBy, sortOrder]);
+  }, [searchTerm, categoryFilter, subCategoryFilter, directionFilter, sortBy, sortOrder]);
 
   // Reset all filters to default state
   const handleResetFilters = () => {
     setSearchTerm("");
     setCategoryFilter("All");
+    setSubCategoryFilter("All");
     setDirectionFilter("All");
     setSortBy("Call Date");
     setSortOrder("Descending");
@@ -378,8 +396,8 @@ export default function AllCalls() {
       {/* Title & Actions Row */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white select-text">All Calls</h1>
-          <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5 select-text">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white select-text">All Calls</h1>
+          <p className="text-zinc-500 text-xs sm:text-sm mt-1 select-text">
             {totalCallsCount} calls found
           </p>
         </div>
@@ -389,7 +407,7 @@ export default function AllCalls() {
           {hasFiltersApplied && (
             <button
               onClick={handleResetFilters}
-              className="border border-zinc-800/80 bg-[#121214] rounded-full px-3.5 sm:px-4 py-1.5 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
+              className="border border-zinc-800/80 bg-[#121214] rounded-full px-5 py-2.5 flex items-center gap-2 text-xs sm:text-sm font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
             >
               Reset Filters
             </button>
@@ -398,18 +416,18 @@ export default function AllCalls() {
           {/* Export Button */}
           <button
             onClick={handleExport}
-            className="border border-zinc-800/80 bg-[#121214] rounded-full px-3.5 sm:px-4 py-1.5 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
+            className="border border-zinc-800/80 bg-[#121214] rounded-full px-5 py-2.5 flex items-center gap-2 text-xs sm:text-sm font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
           >
-            <Download size={13} />
+            <Download size={15} />
             <span>Export</span>
           </button>
 
           {/* Refresh Button */}
           <button
             onClick={handleRefresh}
-            className="border border-zinc-800/80 bg-[#121214] rounded-full px-3.5 sm:px-4 py-1.5 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
+            className="border border-zinc-800/80 bg-[#121214] rounded-full px-5 py-2.5 flex items-center gap-2 text-xs sm:text-sm font-bold text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-900/30 transition-all cursor-pointer"
           >
-            <RotateCw size={13} className={isRefreshing ? "animate-spin text-purple-400" : ""} />
+            <RotateCw size={15} className={isRefreshing ? "animate-spin text-purple-400" : ""} />
             <span>Refresh</span>
           </button>
         </div>
@@ -421,6 +439,8 @@ export default function AllCalls() {
         setSearchTerm={setSearchTerm}
         categoryFilter={categoryFilter}
         setCategoryFilter={setCategoryFilter}
+        subCategoryFilter={subCategoryFilter}
+        setSubCategoryFilter={setSubCategoryFilter}
         directionFilter={directionFilter}
         setDirectionFilter={setDirectionFilter}
         sortBy={sortBy}

@@ -39,7 +39,7 @@ export default function CallsPagination({
           ...
         </span>
       );
-    } else if (totalPages > 2 && currentPage === 3) {
+    } else if (totalPages > 2 && currentPage === 3 && currentPage !== totalPages) {
       pages.push(
         <button
           key={2}
@@ -92,7 +92,7 @@ export default function CallsPagination({
           ...
         </span>
       );
-    } else if (currentPage === totalPages - 2 && totalPages > 2) {
+    } else if (currentPage === totalPages - 2 && totalPages > 3) {
       const penUltimate = totalPages - 1;
       pages.push(
         <button

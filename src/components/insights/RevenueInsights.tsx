@@ -95,24 +95,24 @@ function RevenueCard({
                         onMouseEnter={() => setBadgeHovered(true)}
                         onMouseLeave={() => setBadgeHovered(false)}
                         className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider border transition-all duration-200 cursor-pointer",
+                            "text-xs font-bold uppercase tracking-wider border transition-all duration-200 cursor-pointer",
                             badgeHovered ? style.badgeHover : style.badge
                         )}
                     >
                         {style.label}
                     </Badge>
-                    <span className="text-xs font-bold text-zinc-400">
+                    <span className="text-sm font-bold text-zinc-400">
                         #{insight.insightNumber}
                     </span>
                 </div>
 
-                <span className="flex-1 text-xs sm:text-sm font-medium text-zinc-100 leading-snug line-clamp-2 sm:line-clamp-1">
+                <span className="flex-1 text-sm sm:text-base font-medium text-zinc-100 leading-snug line-clamp-2 sm:line-clamp-1">
                     {insight.headline}
                 </span>
 
                 <ChevronDown
                     className={cn(
-                        "h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200 self-end sm:self-auto",
+                        "h-4.5 w-4.5 shrink-0 text-zinc-400 transition-transform duration-200 self-end sm:self-auto",
                         open && "rotate-180"
                     )}
                 />
@@ -133,13 +133,13 @@ function RevenueCard({
                             {insight.signal?.description && (
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2">
-                                        <BarChart3 className="h-4.5 w-4.5 text-[#38bdf8]" />
-                                        <h4 className="text-sm font-bold text-[#38bdf8] tracking-wide">
+                                        <BarChart3 className="h-5 w-5 text-[#38bdf8]" />
+                                        <h4 className="text-base font-bold text-[#38bdf8] tracking-wide">
                                             Signal Detected
                                         </h4>
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
+                                    <p className="text-sm sm:text-base text-zinc-300 leading-relaxed select-text">
                                         {insight.signal.description}
                                     </p>
 
@@ -147,7 +147,7 @@ function RevenueCard({
                                     {insight.signal.examples && insight.signal.examples.length > 0 && (
                                         <ul className="space-y-2 pl-1.5 mt-3 select-text">
                                             {insight.signal.examples.map((ex, idx) => (
-                                                <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                                                <li key={idx} className="flex items-start gap-2.5 text-sm sm:text-base text-zinc-300 leading-relaxed">
                                                     <span className="text-zinc-500 shrink-0 font-bold">•</span>
                                                     <span>{ex}</span>
                                                 </li>
@@ -158,7 +158,7 @@ function RevenueCard({
                                     {/* Time Pattern */}
                                     {insight.signal.timePattern && (
                                         <div className="flex items-center gap-2 mt-3.5 text-xs text-zinc-400 font-semibold select-text">
-                                            <Clock className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                                            <Clock className="h-4 w-4 text-zinc-500 shrink-0" />
                                             <span>{insight.signal.timePattern}</span>
                                         </div>
                                     )}
@@ -169,20 +169,20 @@ function RevenueCard({
                             {insight.impact?.description && (
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2">
-                                        <PoundSterling className="h-4.5 w-4.5 text-[#eab308]" />
-                                        <h4 className="text-sm font-bold text-[#38bdf8] tracking-wide">
+                                        <PoundSterling className="h-5 w-5 text-[#eab308]" />
+                                        <h4 className="text-base font-bold text-[#38bdf8] tracking-wide">
                                             Revenue Impact
                                         </h4>
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
+                                    <p className="text-sm sm:text-base text-zinc-300 leading-relaxed select-text">
                                         {insight.impact.description}
                                     </p>
 
                                     {/* Recurring Risk Warning Badge */}
                                     {insight.impact.recurringRisk && (
                                         <div className="flex items-center gap-2 mt-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-1.5 w-fit text-xs font-semibold text-rose-400 select-text">
-                                            <AlertTriangle className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                                            <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
                                             <span>Recurring risk — pattern repeats weekly</span>
                                         </div>
                                     )}
@@ -193,13 +193,13 @@ function RevenueCard({
                             {insight.reasoning && (
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2">
-                                        <Lightbulb className="h-4.5 w-4.5 text-[#a855f7]" />
-                                        <h4 className="text-sm font-bold text-[#38bdf8] tracking-wide">
+                                        <Lightbulb className="h-5 w-5 text-[#a855f7]" />
+                                        <h4 className="text-base font-bold text-[#38bdf8] tracking-wide">
                                             Why This Matters
                                         </h4>
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed select-text">
+                                    <p className="text-sm sm:text-base text-zinc-300 leading-relaxed select-text">
                                         {insight.reasoning}
                                     </p>
                                 </div>
@@ -209,27 +209,27 @@ function RevenueCard({
                             {insight.action?.description && (
                                 <div className="rounded-xl border border-[#1e1e24] bg-[#0c0c0e] p-4 sm:p-5 space-y-3.5 select-text">
                                     <div className="flex items-center gap-2">
-                                        <SquareCheckBig className="h-4.5 w-4.5 text-[#38bdf8]" />
-                                        <h4 className="text-sm font-bold text-[#38bdf8] tracking-wide">
+                                        <SquareCheckBig className="h-5 w-5 text-[#38bdf8]" />
+                                        <h4 className="text-base font-bold text-[#38bdf8] tracking-wide">
                                             Action
                                         </h4>
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                                    <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
                                         {insight.action.description}
                                     </p>
 
                                     {(insight.action.owner || insight.action.timeline) && (
                                         <div className="mt-4 flex flex-wrap gap-2.5 pt-1">
                                             {insight.action.owner && (
-                                                <div className="flex items-center gap-2 rounded-full bg-[#161618] border border-[#1e1e24] px-3.5 py-1 text-xs text-zinc-300 font-semibold">
-                                                    <User className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                                <div className="flex items-center gap-2 rounded-full bg-[#161618] border border-[#1e1e24] px-4 py-1.5 text-xs text-zinc-300 font-semibold">
+                                                    <User className="h-4 w-4 text-zinc-400 shrink-0" />
                                                     <span>{insight.action.owner}</span>
                                                 </div>
                                             )}
                                             {insight.action.timeline && (
-                                                <div className="flex items-center gap-2 rounded-full bg-[#161618] border border-[#1e1e24] px-3.5 py-1 text-xs text-zinc-300 font-semibold">
-                                                    <Clock className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                                <div className="flex items-center gap-2 rounded-full bg-[#161618] border border-[#1e1e24] px-4 py-1.5 text-xs text-zinc-300 font-semibold">
+                                                    <Clock className="h-4 w-4 text-zinc-400 shrink-0" />
                                                     <span>{insight.action.timeline}</span>
                                                 </div>
                                             )}
@@ -242,8 +242,8 @@ function RevenueCard({
                             {insight.evidence?.quotes && insight.evidence.quotes.length > 0 && (
                                 <div className="space-y-2.5 pt-2 select-text">
                                     <div className="flex items-center gap-2">
-                                        <Quote className="h-4.5 w-4.5 text-[#38bdf8]" />
-                                        <h4 className="text-sm font-bold text-[#38bdf8] tracking-wide">
+                                        <Quote className="h-5 w-5 text-[#38bdf8]" />
+                                        <h4 className="text-base font-bold text-[#38bdf8] tracking-wide">
                                             Caller Quotes
                                         </h4>
                                     </div>
@@ -251,7 +251,7 @@ function RevenueCard({
                                         {insight.evidence.quotes.map((q, idx) => (
                                             <blockquote
                                                 key={idx}
-                                                className="border-l border-zinc-700 pl-3.5 text-xs sm:text-sm italic text-zinc-400 leading-relaxed"
+                                                className="border-l border-zinc-700 pl-3.5 text-sm sm:text-base italic text-zinc-400 leading-relaxed"
                                             >
                                                 {q}
                                             </blockquote>

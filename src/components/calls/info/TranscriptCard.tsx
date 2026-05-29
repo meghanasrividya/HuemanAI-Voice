@@ -48,68 +48,86 @@ export default function TranscriptCard({ transcript }: Props) {
 
   return (
     <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl flex flex-col overflow-hidden">
+      <style>{`
+        .transcript-scrollbar::-webkit-scrollbar {
+          width: 14px;
+        }
+        .transcript-scrollbar::-webkit-scrollbar-track {
+          background: #222226;
+        }
+        .transcript-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #8e8e93; 
+          border-radius: 9999px;
+          border: 3px solid #222226;
+        }
+        .transcript-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #a1a1aa;
+        }
+        .transcript-scrollbar {
+          scrollbar-width: auto;
+          scrollbar-color: #8e8e93 #222226;
+        }
+      `}</style>
 
       {/* ── Fixed header: title + search ── */}
       <div className="flex-shrink-0 px-5 pt-5 pb-3 space-y-3">
-        <p className="text-[10px] text-zinc-400 font-extrabold uppercase tracking-widest">
+        <p className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">
           Transcript
         </p>
 
-        {/* Search bar — rounded, white border glow on focus */}
+        {/* Search bar — slightly rounded rectangle matching screenshot */}
         <div className="relative">
           <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-            <Search size={14} className="text-zinc-500" />
+            <Search size={16} className="text-zinc-500" />
           </span>
           <input
             type="text"
             placeholder="Find in transcript..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border border-zinc-700/60 rounded-full py-2.5 pl-9 pr-4 text-[12px] text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-white/50 transition-colors"
+            className="w-full bg-[#18181b] border border-zinc-800/80 rounded-xl py-3 pl-10 pr-4 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors"
           />
         </div>
       </div>
 
-      {/* ── Scrollable message list — scrollbar only here ── */}
+      {/* ── Scrollable message list — custom scrollbar ── */}
       <div
-        className="flex-1 overflow-y-auto min-h-0 px-3 pb-4 space-y-2"
-        style={{ maxHeight: "420px" }}
+        className="flex-1 overflow-y-auto min-h-0 px-3 pb-4 space-y-3 transcript-scrollbar"
+        style={{ maxHeight: "560px" }}
       >
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-zinc-500 text-[11px]">
+          <div className="flex items-center justify-center h-24 text-zinc-500 text-xs">
             No results found.
           </div>
         ) : (
           filtered.map((turn, idx) => {
-            const isBot = turn.speaker === "Bot";
+            const isFirst = idx === 0;
+
             return (
               <div
                 key={idx}
-                className={`rounded-xl px-4 py-3 space-y-1.5 border ${isBot
-                  ? "bg-[#1c1c20] border-[#2a2a30]"
-                  : "bg-[#17171b] border-[#252528]"
+                className={`rounded-xl px-4 py-3.5 space-y-2 border ${isFirst
+                    ? "bg-[#333333] border-[#3f3f3f]"
+                    : "bg-[#18181a] border-[#222225]"
                   }`}
               >
                 {/* Speaker badge + time */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <span
-                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md tracking-wide ${isBot
-                      ? "bg-[#2a2a32] text-zinc-300"
-                      : "bg-[#222228] text-zinc-300"
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isFirst
+                        ? "bg-[#52525b] text-zinc-200"
+                        : "bg-[#000000] text-zinc-300"
                       }`}
                   >
                     {turn.speaker}
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-semibold">
+                  <span className="text-xs text-zinc-400 font-medium">
                     {turn.time}
                   </span>
                 </div>
 
                 {/* Message text */}
-                <p
-                  className={`text-[13px] leading-relaxed font-medium select-text ${isBot ? "text-white" : "text-[#5aaeff]"
-                    }`}
-                >
+                <p className="text-[15px] leading-relaxed font-normal text-zinc-100 select-text">
                   {renderHighlighted(turn.text, searchQuery)}
                 </p>
               </div>

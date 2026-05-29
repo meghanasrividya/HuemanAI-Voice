@@ -30,7 +30,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
   useEffect(() => {
     if (recordingUrl) {
       const audio = new Audio(recordingUrl);
-      audio.preload = "auto";
+      audio.preload = "none";
       audioRef.current = audio;
 
       const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -158,7 +158,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
     <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl p-5 space-y-5">
       {/* Header */}
       <div>
-        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Recording</p>
+        <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Recording</p>
       </div>
 
       {/* Controls Row */}
@@ -167,11 +167,11 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
         <div className="flex items-center gap-3">
           <button
             onClick={togglePlay}
-            className="w-11 h-11 rounded-full border border-zinc-700/60 bg-[#070709] flex items-center justify-center text-white hover:border-zinc-500 hover:bg-[#18181b] transition-all cursor-pointer flex-shrink-0"
+            className="w-12 h-12 rounded-full border border-zinc-700/60 bg-[#070709] flex items-center justify-center text-white hover:border-zinc-500 hover:bg-[#18181b] transition-all cursor-pointer flex-shrink-0"
           >
             {isPlaying
-              ? <Pause size={15} className="text-white" strokeWidth={2} />
-              : <Play  size={15} className="text-white ml-0.5" strokeWidth={2} />
+              ? <Pause size={17} className="text-white" strokeWidth={2} />
+              : <Play  size={17} className="text-white ml-0.5" strokeWidth={2} />
             }
           </button>
 
@@ -182,7 +182,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
                 <button
                   key={speed}
                   onClick={() => setPlaybackRate(speed)}
-                  className={`text-[11px] font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer ${
+                  className={`text-xs font-bold px-4.5 py-2 rounded-full border transition-all cursor-pointer ${
                     active
                       ? "bg-white border-white text-black"
                       : "bg-[#070709] border-zinc-700/60 text-zinc-300 hover:text-white hover:border-zinc-500"
@@ -196,10 +196,10 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
         </div>
 
         {/* Time + Mute */}
-        <div className="flex items-center gap-4 text-xs font-semibold text-zinc-400">
+        <div className="flex items-center gap-4 text-sm font-semibold text-zinc-400">
           <span className="tabular-nums">{formatTime(currentTime)} / {durationStr}</span>
           <button onClick={toggleMute} className="text-zinc-400 hover:text-white transition-colors cursor-pointer">
-            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
           </button>
         </div>
       </div>
@@ -237,18 +237,20 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
 
       {/* ── Dynamic Mini-Pillars (bottom row) ── */}
       {/* Medium gray, rounded top, bottom-aligned, height scales with duration */}
-      <div className="flex items-end gap-[1.5px] h-10 w-full">
-        {miniPillars.map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-t-sm"
-            style={{
-              height: `${h}%`,
-              backgroundColor: "#5a5a62",
-            }}
-          />
-        ))}
-      </div>
+      {recordingUrl && durationSeconds > 0 && (
+        <div className="flex items-end gap-[1.5px] h-10 w-full">
+          {miniPillars.map((h, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-t-sm"
+              style={{
+                height: `${h}%`,
+                backgroundColor: "#5a5a62",
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

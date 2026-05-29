@@ -152,11 +152,11 @@ export default function StatsRow({ stats, botName, mode }: Props) {
                             </div>
 
                             <div className="space-y-0.5">
-                                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                                <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
                                     {card.format(rawValue as any)}
                                 </h3>
 
-                                <p className="text-xs font-semibold text-[#71717a] tracking-wide">
+                                <p className="text-sm font-semibold text-[#71717a] tracking-wide">
                                     {card.label}
                                 </p>
                             </div>
