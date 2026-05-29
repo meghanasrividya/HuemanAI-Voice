@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   if (url.pathname.startsWith("/api/")) {
     const backendUrl = `https://voice.huemanai.co.uk${url.pathname}${url.search}`;
@@ -14,8 +14,11 @@ export async function proxy(request: NextRequest) {
     headers.set("host", "voice.huemanai.co.uk");
     headers.set("origin", "https://voice.huemanai.co.uk");
     
-    // Attach live site session cookies if configured in .env.local
-    if (process.env.NEXT_PUBLIC_DEV_COOKIE) {
+    // Attach live site session credentials from env ONLY if client didn't supply their own
+    const clientCookie = request.headers.get("cookie");
+    const clientAuth = request.headers.get("authorization");
+    
+    if (!clientCookie && !clientAuth && process.env.NEXT_PUBLIC_DEV_COOKIE) {
       console.log("[Proxy] Attaching DEV_COOKIE...");
       headers.set("cookie", process.env.NEXT_PUBLIC_DEV_COOKIE);
       
@@ -28,16 +31,15 @@ export async function proxy(request: NextRequest) {
         headers.set("x-xsrf-token", token);
       }
     } else {
-      console.warn("[Proxy Warning] NEXT_PUBLIC_DEV_COOKIE is not defined in env!");
+      console.log("[Proxy] Client supplied active session credentials (Cookie/Authorization). Routing request directly.");
     }
     
-    // Attach explicit CSRF token if configured in .env.local
-    if (process.env.NEXT_PUBLIC_DEV_CSRF) {
+    // Attach explicit CSRF token if configured in .env.local AND not provided by the client
+    const clientCsrf = request.headers.get("x-csrf-token") || request.headers.get("x-xsrf-token");
+    if (!clientCsrf && process.env.NEXT_PUBLIC_DEV_CSRF) {
       console.log(`[Proxy] Attaching explicit DEV_CSRF: ${process.env.NEXT_PUBLIC_DEV_CSRF.substring(0, 10)}...`);
       headers.set("x-csrf-token", process.env.NEXT_PUBLIC_DEV_CSRF);
       headers.set("x-xsrf-token", process.env.NEXT_PUBLIC_DEV_CSRF);
-    } else {
-      console.warn("[Proxy Warning] NEXT_PUBLIC_DEV_CSRF is not defined in env!");
     }
     
     try {

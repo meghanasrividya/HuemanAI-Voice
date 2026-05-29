@@ -5,6 +5,11 @@ export async function fetchActionHotels() {
     return response.data;
 }
 
+export async function fetchActionStats() {
+    const response = await apiClient.post("/actions/stats");
+    return response.data;
+}
+
 export async function fetchActionsList(payload: any) {
   const response = await apiClient.post("/actions/list", payload);
   return response.data;
@@ -23,7 +28,12 @@ export async function fetchActionById(actionId: string) {
 }
 
 export async function createAction(data: any) {
-    const response = await apiClient.post("/actions", data);
+    const response = await apiClient.post("/actions/create", data);
+    return response.data;
+}
+
+export async function decryptPhoneNumber(actionId: string) {
+    const response = await apiClient.get(`/actions/${actionId}/decrypt-number`);
     return response.data;
 }
 
@@ -34,5 +44,10 @@ export async function updateAction(actionId: string, data: any) {
 
 export async function deleteAction(actionId: string) {
     const response = await apiClient.delete(`/actions/${actionId}`);
+    return response.data;
+}
+
+export async function fetchAdminSettings() {
+    const response = await apiClient.get("/admin/settings");
     return response.data;
 }

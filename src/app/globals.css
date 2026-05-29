@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050505;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -12,15 +12,83 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html:not(.dark) {
+  --background: #fbfbfb;
+  --foreground: #09090b;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s, color 0.2s;
 }
+
+/* --- Global Light Mode Overrides when html does not have .dark --- */
+html:not(.dark) .bg-\[\#050505\],
+html:not(.dark) .bg-black,
+html:not(.dark) .bg-\[\#070709\] {
+  background-color: #fbfbfb !important;
+}
+
+html:not(.dark) .bg-\[\#0c0c0e\],
+html:not(.dark) .bg-\[\#0b0b0d\],
+html:not(.dark) .bg-\[\#0c0c0f\],
+html:not(.dark) .bg-white\/5 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-\[\#050507\],
+html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#101118\] {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .bg-\[\#1d1d22\],
+html:not(.dark) .bg-zinc-800 {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+/* Sidebar user block avatar fallback */
+html:not(.dark) .bg-\[\#18181b\] {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
+}
+
+/* Text overrides */
+html:not(.dark) .text-white {
+  color: #09090b !important;
+}
+
+html:not(.dark) .text-zinc-350,
+html:not(.dark) .text-zinc-300,
+html:not(.dark) .text-zinc-200 {
+  color: #18181b !important;
+}
+
+html:not(.dark) .text-zinc-400,
+html:not(.dark) .text-zinc-500 {
+  color: #71717a !important;
+}
+
+html:not(.dark) .text-zinc-600 {
+  color: #a1a1aa !important;
+}
+
+/* Borders */
+html:not(.dark) .border-zinc-900,
+html:not(.dark) .border-\[\#1e1e24\],
+html:not(.dark) .border-\[\#232327\],
+html:not(.dark) .border-\[\#29292f\],
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-850 {
+  border-color: #e4e4e7 !important;
+}
+
+/* Card and container shadows for light mode */
+html:not(.dark) .rounded-3xl,
+html:not(.dark) .rounded-2xl {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+

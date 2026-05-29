@@ -258,15 +258,19 @@ export default function DashboardPage() {
           <div className="space-y-2">
 
             {[
-              { name: "Dashboard", icon: <Layers size={16} /> },
-              { name: "Calls", icon: <PhoneCall size={16} /> },
-              { name: "Actions", icon: <Calendar size={16} /> },
-              { name: "Insights", icon: <Activity size={16} /> },
-              { name: "Reports", icon: <Award size={16} /> },
+              { name: "Dashboard", href: "/dashboard", icon: <Layers size={16} /> },
+              { name: "Calls", href: "/calls", icon: <PhoneCall size={16} /> },
+              { name: "Actions", href: "/actions", icon: <Calendar size={16} /> },
+              { name: "Insights", href: "/insights", icon: <Activity size={16} /> },
+              { name: "Outbound", href: "/outbound_campaign", icon: <PhoneCall size={16} /> },
+              { name: "Reports", href: "/reports", icon: <Award size={16} /> },
             ].map((item) => (
               <button
                 key={item.name}
-                onClick={() => setActiveTab(item.name)}
+                onClick={() => {
+                  setActiveTab(item.name);
+                  router.push(item.href);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${activeTab === item.name
                   ? "bg-zinc-800 text-white"
                   : "text-zinc-400 hover:bg-zinc-900"
@@ -284,7 +288,10 @@ export default function DashboardPage() {
 
         <div className="border-t border-zinc-900 pt-4">
 
-          <div className="flex items-center gap-3 mb-4">
+          <div 
+            onClick={() => router.push("/profile")}
+            className="flex items-center gap-3 mb-4 cursor-pointer hover:opacity-80 transition-all"
+          >
 
             <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-white">
               {userData?.first_name?.charAt(0)?.toUpperCase() || "U"}
