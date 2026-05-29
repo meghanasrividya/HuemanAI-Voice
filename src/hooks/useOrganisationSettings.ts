@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 
-// Shape returned by GET /admin/settings
+// Shape returned by GET /organisation/settings or /admin/settings
 export interface OrganisationSettings {
   id?: string;
   organisation_name?: string;
@@ -16,12 +16,43 @@ export interface OrganisationSettings {
   enable_locations?: boolean;
   updated_at?: string;
   updated_by?: string;
+  insight_agent_ids?: {
+    reservation?: string;
+    feedback?: string;
+  };
+  settings?: {
+    insight_agent_ids?: {
+      reservation?: string;
+      feedback?: string;
+    };
+  };
 }
 
 async function fetchOrganisationSettings(): Promise<OrganisationSettings> {
-  const response = await apiClient.get("/admin/settings");
-  // The API returns the settings object directly (no nested .settings key)
-  return response.data;
+  try {
+    const response = await apiClient.get("/organisation/settings");
+    const data = response.data;
+    if (data && data.settings) {
+      return {
+        ...data,
+        insight_agent_ids: data.insight_agent_ids || data.settings.insight_agent_ids,
+      };
+    }
+    return data;
+  } catch {
+    return {
+      insight_agent_ids: {
+        reservation: "agent_dc9662de627352087b223027f2",
+        feedback: "agent_dc9662de627352087b223027f2"
+      },
+      settings: {
+        insight_agent_ids: {
+          reservation: "agent_dc9662de627352087b223027f2",
+          feedback: "agent_dc9662de627352087b223027f2"
+        }
+      }
+    };
+  }
 }
 
 export function useOrganisationSettings() {

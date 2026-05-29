@@ -32,10 +32,10 @@ function buildResponseHeaders(backendHeaders: Record<string, any>): Headers {
 
 export async function GET(
   request: Request,
-  { params }: { params: { actionId: string } }
+  { params }: { params: Promise<{ actionId: string }> }
 ) {
   try {
-    const { actionId } = params;
+    const { actionId } = await params;
     const headers = forwardHeaders(request);
     const response = await axios.get(
       `https://voice.huemanai.co.uk/api/actions/${actionId}`,
@@ -53,10 +53,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { actionId: string } }
+  { params }: { params: Promise<{ actionId: string }> }
 ) {
   try {
-    const { actionId } = params;
+    const { actionId } = await params;
     const headers = forwardHeaders(request);
     let body = null;
     try { body = await request.json(); } catch (_) {}
@@ -78,10 +78,10 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { actionId: string } }
+  { params }: { params: Promise<{ actionId: string }> }
 ) {
   try {
-    const { actionId } = params;
+    const { actionId } = await params;
     const headers = forwardHeaders(request);
     const response = await axios.delete(
       `https://voice.huemanai.co.uk/api/actions/${actionId}`,

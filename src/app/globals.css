@@ -23,7 +23,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.2s, color 0.2s;
 }
-
 /* --- Global Light Mode Overrides when html does not have .dark --- */
 html:not(.dark) .bg-\[\#050505\],
 html:not(.dark) .bg-black,
@@ -92,3 +91,9 @@ html:not(.dark) .rounded-2xl {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
+.section-heading-gradient {
+  background: linear-gradient(to right, #0d9488, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}

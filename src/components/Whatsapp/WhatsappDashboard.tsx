@@ -142,11 +142,11 @@ export default function WhatsappDashboard() {
                 conversations
                     .map(
                         (c: any) =>
-                            c.active_hotel
+                            c.active_hotel as string
                     )
                     .filter(Boolean)
             )
-        ).sort();
+        ).sort() as string[];
     }, [conversations]);
 
     /*

@@ -161,7 +161,7 @@ const fallbackUsers: AdminUser[] = [
   }
 ];
 
-export default function AdminSettingsPage() {
+export default function AdminPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Admin");
   const [mounted, setMounted] = useState(false);
@@ -856,4 +856,3 @@ export default function AdminSettingsPage() {
   </>
 );
 }
-

@@ -24,10 +24,10 @@ function buildResponseHeaders(backendHeaders: Record<string, any>): Headers {
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const headers = forwardHeaders(request);
 
     const response = await axios.delete(

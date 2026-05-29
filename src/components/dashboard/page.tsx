@@ -4,9 +4,7 @@ import {
     useMemo,
 } from "react";
 
-import {
-    DateRangePicker,
-} from "@/components/dashboard/date/DateRangePicker";
+import DateRangePicker from "@/components/dashboard/date/DateRangePicker";
 
 import AnalyticsOverview from "@/components/dashboard/AnalyticsOverview";
 

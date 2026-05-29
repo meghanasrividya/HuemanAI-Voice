@@ -28,9 +28,9 @@ type Props = {
 };
 
 export default function DateRangePicker({
-                                            value,
-                                            onChange,
-                                        }: Props) {
+    value,
+    onChange,
+}: Props) {
     const [open, setOpen] =
         useState(false);
 
@@ -71,8 +71,8 @@ export default function DateRangePicker({
                         )
                     ) : (
                         <span>
-              Pick a date range
-            </span>
+                            Pick a date range
+                        </span>
                     )}
                 </Button>
             </PopoverTrigger>

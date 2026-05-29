@@ -1,26 +1,34 @@
 import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
+
+const configuredApiBase =
+    process.env.NEXT_PUBLIC_API_URL?.trim();
 
 export const apiClient = axios.create({
     baseURL:
-        process.env.NEXT_PUBLIC_API_URL ||
-        "http://localhost:3000/api",
+        configuredApiBase && configuredApiBase.length > 0
+            ? configuredApiBase
+            : "/api",
 
     withCredentials: true,
 });
-
 apiClient.interceptors.request.use((config) => {
+    let token = "";
     if (typeof window !== "undefined") {
-        const rawToken = localStorage.getItem("access_token") || "";
-        const token = rawToken.replace("Bearer ", "");
-        const csrfToken = localStorage.getItem("csrf_token");
-
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        token = useAuthStore.getState().token || "";
+        if (!token) {
+            const rawToken = localStorage.getItem("access_token") || "";
+            token = rawToken.replace("Bearer ", "");
         }
+        const csrfToken = localStorage.getItem("csrf_token");
 
         if (csrfToken) {
             config.headers["X-CSRF-TOKEN"] = csrfToken;
         }
+    }
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
 
     config.headers.Accept = "application/json";
@@ -29,6 +37,8 @@ apiClient.interceptors.request.use((config) => {
     }
 
     return config;
+}, (error) => {
+    return Promise.reject(error);
 });
 
 apiClient.interceptors.response.use((response) => {
