@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Download, RotateCw } from "lucide-react";
+import { Download, RotateCw, X, Calendar, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { useOrganisationSettings } from "@/hooks/useOrganisationSettings";
 
@@ -70,6 +70,9 @@ export default function AllCalls() {
   // Reset page when category or direction or subcategory filters change
   useEffect(() => {
     setCurrentPage(1);
+    if (directionFilter !== "Outbound" && categoryFilter === "Feedback") {
+      setCategoryFilter("All");
+    }
     if (categoryFilter !== "Reservation") {
       setSubCategoryFilter("All");
     }
@@ -80,6 +83,35 @@ export default function AllCalls() {
 
   // Loading animation state for simulated refresh
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Export Calls Modal & Custom DatePicker states
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [modalStartDate, setModalStartDate] = useState("2026-04-29");
+  const [modalEndDate, setModalEndDate] = useState("2026-05-29");
+  const [modalCategory, setModalCategory] = useState("All Categories");
+  const [modalDirection, setModalDirection] = useState("All Directions");
+  const [modalStatus, setModalStatus] = useState("Ended");
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showDirectionDropdown, setShowDirectionDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [startCalendarMonthDate, setStartCalendarMonthDate] = useState(new Date(2026, 3, 29)); // April 2026
+  const [endCalendarMonthDate, setEndCalendarMonthDate] = useState(new Date(2026, 4, 29)); // May 2026
+
+  // Automatically open the Start Date calendar popup when modal is triggered
+  useEffect(() => {
+    if (isExportModalOpen) {
+      setShowStartCalendar(true);
+      setShowEndCalendar(false);
+      setShowCategoryDropdown(false);
+      setShowDirectionDropdown(false);
+      setShowStatusDropdown(false);
+      setStartCalendarMonthDate(new Date(2026, 3, 29)); // April 2026
+      setEndCalendarMonthDate(new Date(2026, 4, 29)); // May 2026
+    }
+  }, [isExportModalOpen]);
 
   // Toggle mask/unmask for a specific caller phone number
   const toggleMask = (callId: string) => {
@@ -257,18 +289,27 @@ export default function AllCalls() {
           }
 
           // Parse dynamic sentiments from string or number
-          const isReservation = String(c.category || "").trim().toLowerCase() === "reservation";
-          let sentimentVal = isReservation ? "Neutral" : "N/A";
-
+          let sentimentVal = "N/A";
           if (c.sentiment !== undefined && c.sentiment !== null && String(c.sentiment).trim() !== "") {
-            if (typeof c.sentiment === "number") {
-              if (c.sentiment > 0.5) sentimentVal = "Positive";
-              else if (c.sentiment < 0.5) sentimentVal = "Negative";
-              else sentimentVal = isReservation ? "Neutral" : "N/A";
+            const rawVal = c.sentiment;
+            const parsedNum = Number(rawVal);
+            if (!isNaN(parsedNum) && typeof rawVal !== "boolean" && String(rawVal).trim() !== "") {
+              if (parsedNum >= 0 && parsedNum <= 0.34) {
+                sentimentVal = "Negative";
+              } else if ((parsedNum >= 0.35 && parsedNum <= 0.74) || (parsedNum >= 3.5 && parsedNum <= 7.4)) {
+                sentimentVal = "Neutral";
+              } else if (parsedNum >= 0.75 || parsedNum >= 7.5) {
+                sentimentVal = "Positive";
+              } else {
+                sentimentVal = "Neutral";
+              }
             } else {
-              const strSent = String(c.sentiment).trim();
-              const formatted = strSent.charAt(0).toUpperCase() + strSent.slice(1).toLowerCase();
-              sentimentVal = formatted === "Neutral" ? (isReservation ? "Neutral" : "N/A") : formatted;
+              const strSent = String(rawVal).trim();
+              if (strSent.toLowerCase() === "n/a") {
+                sentimentVal = "N/A";
+              } else {
+                sentimentVal = strSent.charAt(0).toUpperCase() + strSent.slice(1).toLowerCase();
+              }
             }
           }
 
@@ -316,19 +357,215 @@ export default function AllCalls() {
   };
 
   const handleExport = () => {
-    const headers = "Call ID,Date/Time,Caller,Phone,Category,Sub Category,Duration,Sentiment,Direction\n";
-    const rows = calls.map(c =>
-      `"${c.id}","${c.startTime}","${c.caller}","${c.phone}","${c.category}","${c.subCategory}","${c.duration}","${c.sentiment}","${c.direction}"`
-    ).join("\n");
+    setIsExportModalOpen(true);
+  };
 
-    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `huemanai_all_calls_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const executeExport = async () => {
+    setIsExporting(true);
+    try {
+      // Only send startDate and endDate — exactly what the API accepts
+      const payload = {
+        startDate: modalStartDate,
+        endDate: modalEndDate
+      };
+
+      console.log("Calling export CSV endpoint with payload:", payload);
+
+      // Call the dedicated CSV export endpoint — returns blob
+      const response = await apiClient.post("/calls/export/csv", payload, {
+        responseType: "blob"
+      });
+
+      // Trigger browser download
+      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `calls_export_${modalStartDate}_to_${modalEndDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export failed:", e);
+    } finally {
+      setIsExporting(false);
+      setIsExportModalOpen(false);
+    }
+  };
+
+  const handleStartDateChange = (val: string) => {
+    setModalStartDate(val);
+    const parts = val.split("-");
+    if (parts.length === 3) {
+      const y = Number(parts[0]);
+      const m = Number(parts[1]) - 1;
+      const d = Number(parts[2]);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 0 && m < 12 && d > 0 && d <= 31) {
+        const parsedDate = new Date(y, m, d);
+        if (!isNaN(parsedDate.getTime())) {
+          setStartCalendarMonthDate(parsedDate);
+        }
+      }
+    }
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setModalEndDate(val);
+    const parts = val.split("-");
+    if (parts.length === 3) {
+      const y = Number(parts[0]);
+      const m = Number(parts[1]) - 1;
+      const d = Number(parts[2]);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 0 && m < 12 && d > 0 && d <= 31) {
+        const parsedDate = new Date(y, m, d);
+        if (!isNaN(parsedDate.getTime())) {
+          setEndCalendarMonthDate(parsedDate);
+        }
+      }
+    }
+  };
+
+  const renderCustomCalendar = (type: "start" | "end") => {
+    const currentMonthDate = type === "start" ? startCalendarMonthDate : endCalendarMonthDate;
+    const setMonthDate = type === "start" ? setStartCalendarMonthDate : setEndCalendarMonthDate;
+    const selectedStr = type === "start" ? modalStartDate : modalEndDate;
+    const setSelectedStr = type === "start" ? setModalStartDate : setModalEndDate;
+
+    const year = currentMonthDate.getFullYear();
+    const month = currentMonthDate.getMonth();
+
+    const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDayIndex = getFirstDayOfMonth(year, month);
+
+    const days = [];
+
+    // Prev month filler
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth);
+
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      days.push({
+        date: new Date(prevYear, prevMonth, daysInPrevMonth - i),
+        isCurrentMonth: false
+      });
+    }
+
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        date: new Date(year, month, i),
+        isCurrentMonth: true
+      });
+    }
+
+    // Next month filler
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    const remainingSlots = 42 - days.length;
+    for (let i = 1; i <= remainingSlots; i++) {
+      days.push({
+        date: new Date(nextYear, nextMonth, i),
+        isCurrentMonth: false
+      });
+    }
+
+    const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    const handlePrevMonth = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMonthDate(new Date(year, month - 1, 1));
+    };
+
+    const handleNextMonth = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMonthDate(new Date(year, month + 1, 1));
+    };
+
+    const handleDayClick = (dayDate: Date, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const y = dayDate.getFullYear();
+      const m = String(dayDate.getMonth() + 1).padStart(2, "0");
+      const d = String(dayDate.getDate()).padStart(2, "0");
+      const dateStr = `${y}-${m}-${d}`;
+      setSelectedStr(dateStr);
+      if (type === "start") {
+        setShowStartCalendar(false);
+      } else {
+        setShowEndCalendar(false);
+      }
+    };
+
+    const isSelected = (dayDate: Date) => {
+      const y = dayDate.getFullYear();
+      const m = String(dayDate.getMonth() + 1).padStart(2, "0");
+      const d = String(dayDate.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}` === selectedStr;
+    };
+
+    return (
+      <div className="select-none text-white font-sans w-full">
+        {/* Month Heading */}
+        <div className="flex items-center justify-between mb-3.5 px-0.5">
+          <button
+            type="button"
+            onClick={handlePrevMonth}
+            className="p-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-zinc-800/60 flex items-center justify-center"
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <span className="text-sm font-bold tracking-wide">
+            {monthNames[month]} {year}
+          </span>
+          <button
+            type="button"
+            onClick={handleNextMonth}
+            className="p-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-zinc-800/60 flex items-center justify-center"
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
+
+        {/* Weekdays */}
+        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+          {weekdays.map((wd) => (
+            <span key={wd} className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider py-1">
+              {wd}
+            </span>
+          ))}
+        </div>
+
+        {/* Days grid */}
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {days.map((day, idx) => {
+            const selected = isSelected(day.date);
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => handleDayClick(day.date, e)}
+                className={`w-7.5 h-7.5 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer mx-auto ${selected
+                  ? "bg-white text-black font-extrabold"
+                  : day.isCurrentMonth
+                    ? "text-zinc-200 hover:bg-zinc-800/60"
+                    : "text-zinc-600 hover:bg-zinc-800/30"
+                  }`}
+              >
+                {day.date.getDate()}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   const filteredCalls = useMemo(() => {
@@ -461,6 +698,7 @@ export default function AllCalls() {
           toggleMask={toggleMask}
           maskPhone={maskPhone}
           loading={loading || isRefreshing}
+          onClearFilters={handleResetFilters}
         />
       </div>
 
@@ -471,6 +709,322 @@ export default function AllCalls() {
         totalPages={totalPages}
         totalCallsCount={totalCallsCount}
       />
+
+      {/* Export Calls Modal overlay */}
+      {isExportModalOpen && (
+        <div
+          onClick={() => {
+            setShowStartCalendar(false);
+            setShowEndCalendar(false);
+            setShowCategoryDropdown(false);
+            setShowDirectionDropdown(false);
+            setShowStatusDropdown(false);
+            setIsExportModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowStartCalendar(false);
+              setShowEndCalendar(false);
+              setShowCategoryDropdown(false);
+              setShowDirectionDropdown(false);
+              setShowStatusDropdown(false);
+            }}
+            className="bg-[#070709] border border-zinc-800 rounded-2xl w-full max-w-[480px] flex flex-col shadow-2xl relative overflow-visible"
+          >
+            {/* Scrollable Container */}
+            <div className="p-6 space-y-6 relative z-10">
+
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white tracking-tight">Export Calls</h2>
+                  <p className="text-zinc-500 text-xs mt-1">Select filters to export calls data as CSV</p>
+                </div>
+                <button
+                  onClick={() => setIsExportModalOpen(false)}
+                  className="text-zinc-500 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-zinc-900/40 flex items-center justify-center"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Start Date Field */}
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-zinc-300">Start Date *</label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowStartCalendar(!showStartCalendar);
+                    setShowEndCalendar(false);
+                    setShowCategoryDropdown(false);
+                    setShowDirectionDropdown(false);
+                    setShowStatusDropdown(false);
+                  }}
+                  className={`w-full bg-[#0a0a0c] border rounded-xl py-3 px-4 flex justify-between items-center text-zinc-200 cursor-text transition-all duration-200 ${showStartCalendar ? "border-white ring-2 ring-white ring-offset-2 ring-offset-black font-medium" : "border-zinc-800/80 hover:border-zinc-700 font-medium"
+                    }`}
+                >
+                  <input
+                    type="text"
+                    value={modalStartDate}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowStartCalendar(true);
+                      setShowEndCalendar(false);
+                      setShowCategoryDropdown(false);
+                      setShowDirectionDropdown(false);
+                      setShowStatusDropdown(false);
+                    }}
+                    className="bg-transparent text-[13px] font-medium text-zinc-200 focus:outline-none w-full cursor-text"
+                  />
+                  <Calendar size={16} className="text-zinc-400 ml-2 flex-shrink-0 cursor-pointer" />
+                </div>
+
+                {/* Custom Calendar Dropdown for Start Date */}
+                {showStartCalendar && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-[78px] left-0 w-[328px] z-50 bg-[#121214] border border-zinc-800 rounded-2xl p-4 shadow-2xl"
+                  >
+                    {renderCustomCalendar("start")}
+                  </div>
+                )}
+              </div>
+
+              {/* End Date Field */}
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-zinc-300">End Date *</label>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEndCalendar(!showEndCalendar);
+                    setShowStartCalendar(false);
+                    setShowCategoryDropdown(false);
+                    setShowDirectionDropdown(false);
+                    setShowStatusDropdown(false);
+                  }}
+                  className={`w-full bg-[#0a0a0c] border rounded-xl py-3 px-4 flex justify-between items-center text-zinc-200 cursor-text transition-all duration-200 ${showEndCalendar ? "border-white ring-2 ring-white ring-offset-2 ring-offset-black font-medium" : "border-zinc-800/80 hover:border-zinc-700 font-medium"
+                    }`}
+                >
+                  <input
+                    type="text"
+                    value={modalEndDate}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowEndCalendar(true);
+                      setShowStartCalendar(false);
+                      setShowCategoryDropdown(false);
+                      setShowDirectionDropdown(false);
+                      setShowStatusDropdown(false);
+                    }}
+                    className="bg-transparent text-[13px] font-medium text-zinc-200 focus:outline-none w-full cursor-text"
+                  />
+                  <Calendar size={16} className="text-zinc-400 ml-2 flex-shrink-0 cursor-pointer" />
+                </div>
+
+                {/* Custom Calendar Dropdown for End Date */}
+                {showEndCalendar && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-[78px] left-0 w-[328px] z-50 bg-[#121214] border border-zinc-800 rounded-2xl p-4 shadow-2xl"
+                  >
+                    {renderCustomCalendar("end")}
+                  </div>
+                )}
+              </div>
+
+              {/* Category Field */}
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-zinc-300">Category</label>
+                <div className="relative">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCategoryDropdown(!showCategoryDropdown);
+                      setShowDirectionDropdown(false);
+                      setShowStatusDropdown(false);
+                      setShowStartCalendar(false);
+                      setShowEndCalendar(false);
+                    }}
+                    className="w-full bg-[#0a0a0c] border border-zinc-800/80 hover:border-zinc-700 rounded-xl py-3 px-4 flex justify-between items-center text-zinc-200 cursor-pointer transition-all duration-200 font-medium"
+                  >
+                    <span className="text-[13px] font-medium">{modalCategory}</span>
+                    <ChevronDown size={16} className="text-zinc-400" />
+                  </div>
+
+                  {showCategoryDropdown && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-[52px] left-0 w-full z-50 bg-[#121214] border border-zinc-800 rounded-xl p-1.5 shadow-2xl space-y-1"
+                    >
+                      {["All Categories", "Reservation"].map((opt) => {
+                        const selected = modalCategory === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                              setModalCategory(opt);
+                              setShowCategoryDropdown(false);
+                            }}
+                            className={`w-full text-left py-1.5 px-3 rounded-lg text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer ${selected
+                              ? "bg-zinc-800/60 text-white"
+                              : "text-zinc-300 hover:text-white hover:bg-zinc-800/30"
+                              }`}
+                          >
+                            <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                              {selected && <Check size={14} className="text-white" />}
+                            </div>
+                            <span>{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Call Direction Field */}
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-zinc-300">Call Direction</label>
+                <div className="relative">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDirectionDropdown(!showDirectionDropdown);
+                      setShowCategoryDropdown(false);
+                      setShowStatusDropdown(false);
+                      setShowStartCalendar(false);
+                      setShowEndCalendar(false);
+                    }}
+                    className="w-full bg-[#0a0a0c] border border-zinc-800/80 hover:border-zinc-700 rounded-xl py-3 px-4 flex justify-between items-center text-zinc-200 cursor-pointer transition-all duration-200 font-medium"
+                  >
+                    <span className="text-[13px] font-medium">{modalDirection}</span>
+                    <ChevronDown size={16} className="text-zinc-400" />
+                  </div>
+
+                  {showDirectionDropdown && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-[52px] left-0 w-full z-50 bg-[#121214] border border-zinc-800 rounded-xl p-1.5 shadow-2xl space-y-1"
+                    >
+                      {["All Directions", "Inbound", "Outbound"].map((opt) => {
+                        const selected = modalDirection === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                              setModalDirection(opt);
+                              setShowDirectionDropdown(false);
+                            }}
+                            className={`w-full text-left py-1.5 px-3 rounded-lg text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer ${selected
+                              ? "bg-zinc-800/60 text-white"
+                              : "text-zinc-300 hover:text-white hover:bg-zinc-800/30"
+                              }`}
+                          >
+                            <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                              {selected && <Check size={14} className="text-white" />}
+                            </div>
+                            <span>{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Call Status Field */}
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-zinc-300">Call Status</label>
+                <div className="relative">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowStatusDropdown(!showStatusDropdown);
+                      setShowCategoryDropdown(false);
+                      setShowDirectionDropdown(false);
+                      setShowStartCalendar(false);
+                      setShowEndCalendar(false);
+                    }}
+                    className="w-full bg-[#0a0a0c] border border-zinc-800/80 hover:border-zinc-700 rounded-xl py-3 px-4 flex justify-between items-center text-zinc-200 cursor-pointer transition-all duration-200 font-medium"
+                  >
+                    <span className="text-[13px] font-medium">{modalStatus}</span>
+                    <ChevronDown size={16} className="text-zinc-400" />
+                  </div>
+
+                  {showStatusDropdown && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-[52px] left-0 w-full z-50 bg-[#121214] border border-zinc-800 rounded-xl p-1.5 shadow-2xl space-y-1"
+                    >
+                      {["Ended", "Active", "All"].map((opt) => {
+                        const selected = modalStatus === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                              setModalStatus(opt);
+                              setShowStatusDropdown(false);
+                            }}
+                            className={`w-full text-left py-1.5 px-3 rounded-lg text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer ${selected
+                              ? "bg-zinc-800/60 text-white"
+                              : "text-zinc-300 hover:text-white hover:bg-zinc-800/30"
+                              }`}
+                          >
+                            <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                              {selected && <Check size={14} className="text-white" />}
+                            </div>
+                            <span>{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Buttons Row */}
+            <div className="p-6 bg-[#070709] flex justify-end items-center gap-3 rounded-b-2xl relative z-0">
+              <button
+                onClick={() => setIsExportModalOpen(false)}
+                disabled={isExporting}
+                className="border border-zinc-800 bg-[#121214] text-zinc-300 hover:text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeExport}
+                disabled={isExporting}
+                className="bg-white text-black hover:bg-zinc-200 px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isExporting ? (
+                  <>
+                    <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={15} />
+                    <span>Export</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

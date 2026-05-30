@@ -87,7 +87,7 @@ export default function CallsFilters({
             setSearchTerm(e.target.value);
             setCurrentPage(1);
           }}
-          className="w-full bg-[#121214] border border-zinc-800/60 rounded-full py-3 pl-12 pr-6 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 transition-all"
+          className="w-full bg-[#121214] border border-zinc-800/60 rounded-full py-3 pl-12 pr-6 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black transition-all"
         />
       </div>
 
@@ -102,6 +102,7 @@ export default function CallsFilters({
           }}
           options={[
             { value: "All", label: "All Categories" },
+            ...(directionFilter === "Outbound" ? [{ value: "Feedback", label: "Feedback" }] : []),
             { value: "Reservation", label: "Reservation" }
           ]}
           minWidth="160px"

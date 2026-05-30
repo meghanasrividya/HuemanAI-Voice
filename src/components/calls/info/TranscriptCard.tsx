@@ -127,7 +127,7 @@ export default function TranscriptCard({ transcript }: Props) {
                 </div>
 
                 {/* Message text */}
-                <p className="text-[15px] leading-relaxed font-normal text-zinc-100 select-text">
+                <p className="text-[15px] leading-relaxed font-normal text-zinc-100 select-text cursor-text">
                   {renderHighlighted(turn.text, searchQuery)}
                 </p>
               </div>
