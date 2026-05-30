@@ -26,6 +26,7 @@ interface CallsTableProps {
   maskPhone: (phone: string, isUnmasked: boolean) => string;
   loading: boolean;
   onClearFilters?: () => void;
+  isRateLimited?: boolean;
 }
 
 export default function CallsTable({
@@ -34,7 +35,8 @@ export default function CallsTable({
   toggleMask,
   maskPhone,
   loading,
-  onClearFilters
+  onClearFilters,
+  isRateLimited = false
 }: CallsTableProps) {
   const router = useRouter();
 
@@ -106,20 +108,22 @@ export default function CallsTable({
             {displayedCalls.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-16 text-center select-none">
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <span className="text-zinc-400 text-sm font-semibold">No calls found</span>
-                    {onClearFilters && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onClearFilters();
-                        }}
-                        className="border border-zinc-800 bg-[#0a0a0c] rounded-full px-5 py-2 text-xs font-bold text-white hover:border-zinc-700 hover:bg-zinc-900/10 transition-all cursor-pointer"
-                      >
-                        Clear filters
-                      </button>
-                    )}
-                  </div>
+                  {!isRateLimited && (
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <span className="text-zinc-400 text-sm font-semibold">No calls found</span>
+                      {onClearFilters && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClearFilters();
+                          }}
+                          className="border border-zinc-800 bg-[#0a0a0c] rounded-full px-5 py-2 text-xs font-bold text-white hover:border-zinc-700 hover:bg-zinc-900/10 transition-all cursor-pointer"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ) : (
@@ -199,17 +203,21 @@ export default function CallsTable({
       <div className="block md:hidden w-full">
         {displayedCalls.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center gap-3 select-none">
-            <span className="text-zinc-400 text-xs font-semibold">No calls found</span>
-            {onClearFilters && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClearFilters();
-                }}
-                className="border border-zinc-800 bg-[#0a0a0c] rounded-full px-5 py-2 text-xs font-bold text-white hover:border-zinc-700 hover:bg-zinc-900/10 transition-all cursor-pointer"
-              >
-                Clear filters
-              </button>
+            {!isRateLimited && (
+              <>
+                <span className="text-zinc-400 text-xs font-semibold">No calls found</span>
+                {onClearFilters && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClearFilters();
+                    }}
+                    className="border border-zinc-800 bg-[#0a0a0c] rounded-full px-5 py-2 text-xs font-bold text-white hover:border-zinc-700 hover:bg-zinc-900/10 transition-all cursor-pointer"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </>
             )}
           </div>
         ) : (

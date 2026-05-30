@@ -43,16 +43,16 @@ export default function AiInsightsCard({
     keyInsights.length > 0
       ? keyInsights
       : [
-          ...(subCategory && subCategory !== "N/A"
-            ? [{ label: "Reservation Type", value: subCategory }]
-            : []),
-          ...(bookingCategory && bookingCategory !== "N/A"
-            ? [{ label: "Booking Category", value: bookingCategory }]
-            : []),
-          ...(category && category !== "N/A" && !subCategory
-            ? [{ label: "Category", value: category }]
-            : []),
-        ];
+        ...(subCategory && subCategory !== "N/A"
+          ? [{ label: "Reservation Type", value: subCategory }]
+          : []),
+        ...(bookingCategory && bookingCategory !== "N/A"
+          ? [{ label: "Booking Category", value: bookingCategory }]
+          : []),
+        ...(category && category !== "N/A" && !subCategory
+          ? [{ label: "Category", value: category }]
+          : []),
+      ];
 
   // Summary bullet points — split on ". " for multi-sentence
   const bullets: string[] = (() => {
@@ -152,7 +152,7 @@ export default function AiInsightsCard({
 
       {/* ── Sentiment Meter ── */}
       <div className="space-y-2">
-          <p className="text-xs text-[#00c4b4] font-extrabold uppercase tracking-widest">
+        <p className="text-xs text-[#00c4b4] font-extrabold uppercase tracking-widest">
           Sentiment Meter
         </p>
         <div className="flex items-center gap-3">
