@@ -43,6 +43,7 @@ export default function AllCalls() {
   const [calls, setCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const [totalCalls, setTotalCalls] = useState(0);
 
   // Search & Filter State
@@ -86,8 +87,21 @@ export default function AllCalls() {
 
   // Export Calls Modal & Custom DatePicker states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [modalStartDate, setModalStartDate] = useState("2026-04-29");
-  const [modalEndDate, setModalEndDate] = useState("2026-05-29");
+  const [modalStartDate, setModalStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
+  const [modalEndDate, setModalEndDate] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
   const [modalCategory, setModalCategory] = useState("All Categories");
   const [modalDirection, setModalDirection] = useState("All Directions");
   const [modalStatus, setModalStatus] = useState("Ended");
@@ -97,8 +111,12 @@ export default function AllCalls() {
   const [showDirectionDropdown, setShowDirectionDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [startCalendarMonthDate, setStartCalendarMonthDate] = useState(new Date(2026, 3, 29)); // April 2026
-  const [endCalendarMonthDate, setEndCalendarMonthDate] = useState(new Date(2026, 4, 29)); // May 2026
+  const [startCalendarMonthDate, setStartCalendarMonthDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d;
+  });
+  const [endCalendarMonthDate, setEndCalendarMonthDate] = useState(() => new Date());
 
   // Automatically open the Start Date calendar popup when modal is triggered
   useEffect(() => {
@@ -108,8 +126,11 @@ export default function AllCalls() {
       setShowCategoryDropdown(false);
       setShowDirectionDropdown(false);
       setShowStatusDropdown(false);
-      setStartCalendarMonthDate(new Date(2026, 3, 29)); // April 2026
-      setEndCalendarMonthDate(new Date(2026, 4, 29)); // May 2026
+
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      setStartCalendarMonthDate(oneMonthAgo);
+      setEndCalendarMonthDate(new Date());
     }
   }, [isExportModalOpen]);
 
@@ -139,6 +160,7 @@ export default function AllCalls() {
     if (showSpinner) setLoading(true);
 
     setError(null);
+    setIsRateLimited(false);
     try {
       // Map frontend sort variables to the backend payload keys
       const sort_by = sortBy === "Call Date" ? "call_start_time" : sortBy === "Duration" ? "duration" : "sentiment";
@@ -332,7 +354,12 @@ export default function AllCalls() {
       }
     } catch (err: any) {
       console.warn("Failed to fetch live calls:", err.message);
-      setError("Failed to fetch live calls. Please try again.");
+      if ((err.response && err.response.status === 429) || String(err.message).includes("429")) {
+        setIsRateLimited(true);
+      } else {
+        setIsRateLimited(false);
+        setError("Failed to fetch live calls. Please try again.");
+      }
       setCalls([]);
     } finally {
       setLoading(false);
@@ -687,6 +714,21 @@ export default function AllCalls() {
         setCurrentPage={setCurrentPage}
       />
 
+      {/* Rate limit error box */}
+      {isRateLimited && (
+        <div className="border border-zinc-900/90 bg-[#121214] rounded-xl py-8 px-6 flex flex-col items-center justify-center gap-3">
+          <span className="text-zinc-400 text-sm font-semibold select-text">
+            Request failed with status code 429
+          </span>
+          <button
+            onClick={() => handleRefresh()}
+            className="bg-[#070709] border border-zinc-800/80 hover:border-zinc-700 text-white font-extrabold px-6 py-1.5 rounded-full text-xs sm:text-sm transition-all cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Table & Cards Sub-Component */}
       <div
         className="border border-zinc-900/90 rounded-xl overflow-hidden flex flex-col flex-shrink-0"
@@ -699,16 +741,19 @@ export default function AllCalls() {
           maskPhone={maskPhone}
           loading={loading || isRefreshing}
           onClearFilters={handleResetFilters}
+          isRateLimited={isRateLimited}
         />
       </div>
 
       {/* Pagination Sub-Component placed OUTSIDE the table card container */}
-      <CallsPagination
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
-        totalCallsCount={totalCallsCount}
-      />
+      {!isRateLimited && (
+        <CallsPagination
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalPages={totalPages}
+          totalCallsCount={totalCallsCount}
+        />
+      )}
 
       {/* Export Calls Modal overlay */}
       {isExportModalOpen && (

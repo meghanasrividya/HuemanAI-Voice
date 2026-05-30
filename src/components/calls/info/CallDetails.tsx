@@ -676,6 +676,7 @@ export default function CallDetails({ callId }: Props) {
               durationSeconds={data.durationSeconds}
               durationStr={data.durationStr}
               recordingUrl={data.recordingUrl}
+              transcriptCount={data.transcript.length}
             />
           </div>
           <div className="px-4 pb-4">
@@ -739,10 +740,10 @@ export default function CallDetails({ callId }: Props) {
                           Action #{act.id}
                         </span>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${act.status.toLowerCase() === "resolved"
-                            ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
-                            : act.status.toLowerCase() === "open"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
+                          : act.status.toLowerCase() === "open"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                           }`}>
                           {act.status.charAt(0).toUpperCase() + act.status.slice(1)}
                         </span>
@@ -772,10 +773,10 @@ export default function CallDetails({ callId }: Props) {
                       </span>
                       <span className="text-zinc-600 text-xs select-none">•</span>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : act.priority.toLowerCase() === "medium"
-                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
+                        ? "bg-red-500/10 text-red-400 border-red-500/20"
+                        : act.priority.toLowerCase() === "medium"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
                         }`}>
                         {act.priority.toUpperCase()}
                       </span>
@@ -806,6 +807,7 @@ export default function CallDetails({ callId }: Props) {
               durationSeconds={data.durationSeconds}
               durationStr={data.durationStr}
               recordingUrl={data.recordingUrl}
+              transcriptCount={data.transcript.length}
             />
             <TranscriptCard transcript={data.transcript} />
           </div>
@@ -870,10 +872,10 @@ export default function CallDetails({ callId }: Props) {
                           Action #{act.id}
                         </span>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${act.status.toLowerCase() === "resolved"
-                            ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
-                            : act.status.toLowerCase() === "open"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          ? "bg-zinc-800/40 text-zinc-400 border-zinc-700"
+                          : act.status.toLowerCase() === "open"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                           }`}>
                           {act.status.charAt(0).toUpperCase() + act.status.slice(1)}
                         </span>
@@ -903,10 +905,10 @@ export default function CallDetails({ callId }: Props) {
                       </span>
                       <span className="text-zinc-600 text-xs select-none">•</span>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${act.priority.toLowerCase() === "high" || act.priority.toLowerCase() === "critical"
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : act.priority.toLowerCase() === "medium"
-                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
+                        ? "bg-red-500/10 text-red-400 border-red-500/20"
+                        : act.priority.toLowerCase() === "medium"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          : "bg-zinc-800/40 text-zinc-400 border-zinc-700"
                         }`}>
                         {act.priority.toUpperCase()}
                       </span>
