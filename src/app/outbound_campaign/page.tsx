@@ -433,9 +433,9 @@ export default function OutboundCampaignsPage() {
                             <button
                               type="button"
                               onClick={() => router.push(`/outbound_campaign/${campaign.id}`)}
-                              className="inline-flex items-center gap-2 text-zinc-300 hover:text-white transition font-semibold"
+                              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-[#0c0c0f] px-4 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/5 hover:text-white hover:border-zinc-700 active:scale-95 cursor-pointer transition-all duration-150"
                             >
-                              <Eye className="h-4 w-4 text-zinc-400" />
+                              <Eye className="h-3.5 w-3.5 text-zinc-400" />
                               View Details
                             </button>
                           </td>
