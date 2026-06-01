@@ -4,9 +4,7 @@ import {
     useMemo,
 } from "react";
 
-import {
-    DateRangePicker,
-} from "@/components/dashboard/date/DateRangePicker";
+import DateRangePicker from "@/components/dashboard/date/DateRangePicker";
 
 import AnalyticsOverview from "@/components/dashboard/AnalyticsOverview";
 
@@ -34,6 +32,9 @@ export default function DashboardPage() {
     const {
         data,
         isLoading,
+        isError,
+        error,
+        refetch,
     } = useCallAnalytics(
         serialized
     );
@@ -82,8 +83,31 @@ export default function DashboardPage() {
                 </div>
             )}
 
+            {isError && !isLoading && (
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-8 text-center">
+                    <p className="font-medium text-destructive">Could not load dashboard data</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {(error as Error)?.message || "Check that you are signed in and the API is reachable."}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => refetch()}
+                        className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
+            {!isLoading && !isError && !analytics && (
+                <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">
+                    No analytics data for this date range.
+                </div>
+            )}
+
             {/* Content */}
             {!isLoading &&
+                !isError &&
                 analytics && (
                     <>
                         {/* KPI */}

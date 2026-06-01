@@ -136,17 +136,17 @@ export default function WhatsappDashboard() {
     /*
      * Hotel options
      */
-    const hotels = useMemo(() => {
-        return Array.from(
+    const hotels = useMemo<string[]>(() => {
+        return (Array.from(
             new Set(
                 conversations
                     .map(
                         (c: any) =>
-                            c.active_hotel
+                            c.active_hotel as string
                     )
                     .filter(Boolean)
             )
-        ).sort();
+        ) as string[]).sort();
     }, [conversations]);
 
     /*
