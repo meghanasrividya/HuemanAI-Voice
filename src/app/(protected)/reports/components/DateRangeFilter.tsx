@@ -1,6 +1,6 @@
 import React from "react";
 import { Calendar, ChevronRight } from "lucide-react";
-import { ReportMetadata } from "../../../lib/api/reports";
+import { ReportMetadata } from "../../../../lib/api/reports";
 
 type DateRangeFilterProps = {
     metadata: ReportMetadata | null;

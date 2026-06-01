@@ -95,7 +95,7 @@ export default function TranscriptCard({ transcript }: Props) {
   };
 
   return (
-    <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl flex flex-col overflow-hidden">
+    <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-[#2a2a32] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       <style>{`
         .transcript-scrollbar::-webkit-scrollbar {
           width: 14px;

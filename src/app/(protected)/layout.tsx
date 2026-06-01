@@ -12,6 +12,7 @@ import {
     Phone,
     PhoneOutgoing,
     LogOut,
+    Sparkles,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -75,14 +76,14 @@ export default function ProtectedLayout({ children }: Props) {
                                     className={cn(
                                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
                                         active
-                                            ? "bg-primary/10 text-foreground"
+                                            ? "bg-zinc-800 text-white"
                                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                     )}
                                 >
                                     <Icon
                                         className={cn(
                                             "h-4 w-4",
-                                            active ? "text-primary" : "text-muted-foreground"
+                                            active ? "text-white" : "text-muted-foreground"
                                         )}
                                     />
                                     <span>{item.label}</span>

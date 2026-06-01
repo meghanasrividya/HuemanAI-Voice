@@ -16,17 +16,56 @@ import {
 import { fetchActionById, updateAction, decryptPhoneNumber, fetchAdminSettings } from "@/lib/api/actions";
 import { TimezoneDate } from "@/lib/timezone/TimezoneDate";
 
+interface EmailNotification {
+  id?: string | number;
+  request_type?: string;
+  name?: string;
+  date?: string;
+  party_size?: string | number;
+  serviceType?: string;
+  notes?: string;
+}
+
+interface LinkedCall {
+  call_id: string | number;
+  created_at?: string;
+  call_duration_ms?: string | number;
+  call_summary?: string;
+}
+
+interface Action {
+  id: string | number;
+  created_at?: string;
+  due_at?: string;
+  is_overdue?: boolean;
+  linked_calls?: LinkedCall[];
+  follow_up_count?: number;
+  guest_name?: string;
+  phone_number?: string;
+  notes?: string;
+  comments?: string;
+  status?: string;
+  request_type?: string;
+  request_type_label?: string;
+  priority?: string;
+  email_notification?: EmailNotification;
+}
+
 type ActionDetailPageProps = {
   params: Promise<{
     actionId: string;
   }>;
 };
 
+function computeIsOverdue(data: Pick<Action, "is_overdue" | "due_at">): boolean {
+  return Boolean(data.is_overdue || (data.due_at && new Date(data.due_at).getTime() < Date.now()));
+}
+
 export default function ActionDetailPage({ params }: ActionDetailPageProps) {
   const { actionId } = use(params);
   const router = useRouter();
 
-  const [action, setAction] = useState<any>(null);
+  const [action, setAction] = useState<Action | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revealedPhone, setRevealedPhone] = useState<string | null>(null);
@@ -35,30 +74,33 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
-
-  const loadData = async () => {
-    try {
-      const [actionData, settingsData] = await Promise.all([
-        fetchActionById(actionId),
-        fetchAdminSettings().catch(() => null),
-      ]);
-      if (actionData) {
-        setAction(actionData);
-        setCommentText(actionData.comments || "");
-      }
-    } catch (err: any) {
-      console.error("Failed to load action details", err);
-      setError(err.message || "Failed to load action details");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isOverdue, setIsOverdue] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      try {
+        const [actionData] = await Promise.all([
+          fetchActionById(actionId),
+          fetchAdminSettings().catch(() => null),
+        ]);
+        if (actionData) {
+          setAction(actionData);
+          setCommentText(actionData.comments || "");
+          setIsOverdue(computeIsOverdue(actionData));
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to load action details";
+        console.error("Failed to load action details", err);
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [actionId]);
 
   const handleDecryptPhone = async () => {
+    if (!action) return;
     if (revealedPhone) {
       setRevealedPhone(null);
     } else {
@@ -74,26 +116,29 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    if (!action) return;
     try {
       await updateAction(action.id.toString(), {
         status: newStatus,
       });
-      // Reload action data
       const data = await fetchActionById(action.id.toString());
       setAction(data);
+      if (data) {
+        setIsOverdue(computeIsOverdue(data));
+      }
     } catch (err) {
       console.error("Failed to update status", err);
     }
   };
 
   const handleSaveComment = async () => {
-    if (commentLoading) return;
+    if (!action || commentLoading) return;
     setCommentLoading(true);
     try {
       await updateAction(action.id.toString(), {
         comments: commentText,
       });
-      setAction((prev: any) => ({ ...prev, comments: commentText }));
+      setAction((prev) => prev ? { ...prev, comments: commentText } : prev);
       setIsEditingComment(false);
     } catch (err) {
       console.error("Failed to update comment", err);
@@ -154,7 +199,6 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
     ? action.linked_calls.length
     : (action.follow_up_count || 0);
 
-  const isOverdue = action.is_overdue || (action.due_at && new Date(action.due_at).getTime() < Date.now());
   const isRepeatCaller = repeatsCount > 1;
 
   // Status mapping
@@ -179,6 +223,7 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => router.push("/actions")}
+              aria-label="Back to Actions"
               className="text-zinc-400 hover:text-white transition flex items-center justify-center p-1.5 rounded-full hover:bg-zinc-900"
             >
               <ArrowLeft size={16} />
@@ -461,7 +506,7 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
 
                   <div className="mt-4 space-y-4">
                     {action.linked_calls && action.linked_calls.length > 0 ? (
-                      action.linked_calls.map((call: any) => {
+                      action.linked_calls.map((call: LinkedCall) => {
                         let callDateStr = "-";
                         if (call.created_at) {
                           try {
@@ -474,7 +519,7 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
 
                         let durationFormatted = "0M";
                         if (call.call_duration_ms) {
-                          const ms = parseInt(call.call_duration_ms, 10);
+                          const ms = parseInt(String(call.call_duration_ms), 10);
                           if (!isNaN(ms)) {
                             const minutes = Math.floor(ms / 60000);
                             durationFormatted = `${minutes}M`;
@@ -496,7 +541,7 @@ export default function ActionDetailPage({ params }: ActionDetailPageProps) {
                               </Link>
                             </div>
                             <p className="text-xs italic text-zinc-400 leading-relaxed">
-                              "{call.call_summary || "No call summary available."}"
+                              &ldquo;{call.call_summary || "No call summary available."}&rdquo;
                             </p>
                             <p className="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">
                               {callDateStr} • {durationFormatted} duration

@@ -37,7 +37,7 @@ export default function ExecutiveSummaryCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative overflow-hidden rounded-2xl border border-[#1e1e24] bg-[#0b0b0d] p-6 sm:p-8"
+            className="relative overflow-hidden rounded-2xl border border-[#1e1e24] bg-[#0b0b0d] p-6 sm:p-8 transition-all duration-200 hover:-translate-y-1 hover:border-[#2a2a32] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
         >
             <div className="relative flex flex-col gap-5">
                 
@@ -68,7 +68,7 @@ export default function ExecutiveSummaryCard({
                 {/* Sub-cards Grid */}
                 <div className="grid gap-5 sm:grid-cols-2 pt-2">
                     {/* Revenue Impact */}
-                    <div className="rounded-xl border border-[#18181b] bg-[#08080a] p-5 space-y-3 transition-all hover:border-zinc-800/80">
+                    <div className="rounded-xl border border-[#18181b] bg-[#08080a] p-5 space-y-3 transition-all duration-200 hover:border-zinc-800/80 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#eab308]/10 border border-[#eab308]/20">
                                 <PoundSterling className="h-3.5 w-3.5 text-[#eab308]" />
@@ -84,7 +84,7 @@ export default function ExecutiveSummaryCard({
                     </div>
 
                     {/* Immediate Action */}
-                    <div className="rounded-xl border border-[#1e1e24] bg-[#161618] p-5 space-y-3 transition-all hover:border-zinc-700/80">
+                    <div className="rounded-xl border border-[#1e1e24] bg-[#161618] p-5 space-y-3 transition-all duration-200 hover:border-zinc-700/80 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#18181b] border border-zinc-800/80">
                                 <Target className="h-3.5 w-3.5 text-zinc-300" />

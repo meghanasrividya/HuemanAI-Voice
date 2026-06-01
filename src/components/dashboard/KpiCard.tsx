@@ -157,7 +157,7 @@ export default function KpiCard({
         <div
             onClick={onClick}
             className={cn(
-                "relative overflow-hidden rounded-xl border border-border bg-card p-6 shadow-premium-sm card-glow card-shine flex flex-col justify-between min-h-[140px]",
+                "relative overflow-hidden rounded-xl border border-border bg-card p-6 shadow-premium-sm card-glow card-shine flex flex-col justify-between min-h-[140px] transition-all duration-200 hover:-translate-y-1",
                 onClick &&
                 "cursor-pointer hover:border-border/80",
                 className

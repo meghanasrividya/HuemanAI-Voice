@@ -31,10 +31,10 @@ import {
 const COLORS = [
   "#27d6a2",
   "#24b8ea",
-  "#8b5cf6",
+  "#22d3ee",
   "#f6c21a",
-  "#ef5574",
-  "#d947e8",
+  "#f59e0b",
+  "#f97316",
   "#20c4d7",
 ];
 
@@ -628,7 +628,9 @@ export default function DashboardPage() {
 
             <div className="relative h-9 w-9 flex items-center justify-center">
               <Bell size={16} className="text-zinc-300" />
-              <div className="absolute top-[9px] right-[9px] w-2 h-2 bg-emerald-400 border border-[#0a0a0a] rounded-full" />
+              <div className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-emerald-400 text-black text-[9px] font-black rounded-full flex items-center justify-center px-1 leading-none">
+                9+
+              </div>
             </div>
           </div>
         </header>
@@ -647,7 +649,7 @@ export default function DashboardPage() {
                   growthLabel={`${data!.kpiTrends?.totalBookingsCaptured?.changePct}%`}
                 />
                 <KPI title="Total Covers" value={data!.totalCovers} />
-                <KPI title="Reservations %" value={`${data!.confirmedPercentage}%`} />
+                <KPI title="Reservations %" value={`${Number(data!.confirmedPercentage ?? 0).toFixed(1)}%`} />
                 <KPI
                   title="Avg Time"
                   value={formatTime(data!.avgTime)}
@@ -775,7 +777,7 @@ function CallOutcomes({ data }: DashboardMetricsProps) {
 
 function KPI({ title, value, growth, indicator = false, growthLabel }: KPIProps) {
   return (
-    <div className="relative bg-[#111111] border border-[#222] rounded-[10px] p-[20px] min-h-[160px] flex flex-col justify-between">
+    <div className="relative bg-[#111111] border border-[#222] rounded-[10px] p-[20px] min-h-[160px] flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 hover:border-[#333] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       {indicator && (
         <div className="absolute right-4 top-4 h-2 w-2 rounded-full bg-emerald-400" />
       )}
@@ -1798,7 +1800,7 @@ function ProgressBar({ value, color, className = "" }: ProgressBarProps) {
 function Section({ children, className = "" }: SectionProps) {
   return (
     <section
-      className={`bg-[#111111] border border-[#1e1e1e] rounded-[10px] transition-colors hover:border-[#272727] ${className}`}
+      className={`bg-[#111111] border border-[#1e1e1e] rounded-[10px] transition-all duration-200 hover:border-[#272727] hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${className}`}
     >
       {children}
     </section>
