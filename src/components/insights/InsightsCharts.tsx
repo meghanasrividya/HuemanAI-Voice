@@ -54,7 +54,7 @@ function shortHour(h: number | string): string {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <div className="rounded-xl border border-[#1e1e24] bg-[#121214]/30 p-4 sm:p-5">
+        <div className="rounded-xl border border-[#1e1e24] bg-[#121214]/30 p-4 sm:p-5 transition-all duration-200 hover:-translate-y-1 hover:border-[#2a2a32] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
             <h3 className="mb-3 sm:mb-4 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-[#2dd4bf]">
                 {title}
             </h3>
@@ -77,7 +77,7 @@ export default function InsightsCharts({ patterns }: Props) {
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="overflow-hidden rounded-xl border border-[#1e1e24] bg-[#161618] transition-all"
+            className="overflow-hidden rounded-xl border border-[#1e1e24] bg-[#161618] transition-all duration-200 hover:-translate-y-1 hover:border-[#2a2a32] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
         >
             {/* Header Button row (Collapsible Panel) */}
             <button

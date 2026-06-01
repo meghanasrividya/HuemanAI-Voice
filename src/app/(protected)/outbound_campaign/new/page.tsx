@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Upload, Download, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { createCampaign, uploadCampaignContacts } from "@/lib/api/campaigns";
-import PageContainer from "@/components/layout/PageContainer";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [campaignName, setCampaignName] = useState("");
   const [selectedScript, setSelectedScript] = useState("feedback-collection");
@@ -139,6 +140,10 @@ export default function NewCampaignPage() {
 
       const uploadResponse = await uploadCampaignContacts(campaignResponse.id, selectedFile);
       setUploadResult(uploadResponse);
+      
+      // Invalidate the campaigns query cache to auto-refresh the list page
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+
       setSubmitSuccess(true);
       setTimeout(() => router.push("/outbound_campaign"), 2500);
     } catch (err: any) {
@@ -160,42 +165,42 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <PageContainer>
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 mb-6">
-        <button
-          type="button"
-          onClick={() => router.push("/outbound_campaign")}
-          className="text-muted-foreground hover:text-foreground transition flex items-center justify-center p-1.5 rounded-full hover:bg-muted active:scale-95"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/outbound_campaign")}
-          className="text-muted-foreground hover:text-foreground font-semibold text-xs ml-1 select-none transition"
-        >
-          Outbound
-        </button>
-        <span className="text-muted-foreground/50 select-none text-xs mx-1">/</span>
-        <span className="text-foreground font-semibold text-xs select-none">New Campaign</span>
-      </div>
+    <div className="h-full bg-[#0a0a0a] text-white overflow-y-auto">
+      <div className="w-full px-[32px] pt-[32px] pb-8 space-y-6">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => router.push("/outbound_campaign")}
+            className="text-zinc-500 hover:text-zinc-300 transition flex items-center justify-center p-1.5 rounded-full hover:bg-zinc-900 active:scale-95"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/outbound_campaign")}
+            className="text-zinc-500 hover:text-zinc-300 font-semibold text-xs ml-1 select-none transition"
+          >
+            Outbound
+          </button>
+          <span className="text-zinc-700 select-none text-xs mx-1">/</span>
+          <span className="text-white font-semibold text-xs select-none">New Campaign</span>
+        </div>
 
-      <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="space-y-1">
-          <h1 className="text-[28px] font-bold tracking-tight">Outbound Calling Module</h1>
-          <p className="text-sm text-muted-foreground font-light">
+          <h1 className="text-[28px] font-bold tracking-tight text-white">Outbound Calling Module</h1>
+          <p className="text-sm text-zinc-400 font-light">
             Upload contacts, select a script, and launch automated outbound campaigns
           </p>
         </div>
 
         {submitSuccess ? (
-          <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/10 p-8 text-center space-y-4">
+          <div className="rounded-[12px] border border-emerald-500/20 bg-emerald-950/10 p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-400">
               <CheckCircle2 size={40} />
             </div>
-            <h2 className="text-2xl font-bold">Campaign Created Successfully!</h2>
-            <div className="text-sm text-muted-foreground max-w-md mx-auto space-y-2">
+            <h2 className="text-2xl font-bold text-white">Campaign Created Successfully!</h2>
+            <div className="text-sm text-zinc-400 max-w-md mx-auto space-y-2">
               <p>Your outbound campaign has been registered, and the contact file parsed successfully.</p>
               {uploadResult && (
                 <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20 font-semibold text-emerald-400 text-xs">
@@ -205,14 +210,14 @@ export default function NewCampaignPage() {
             </div>
             <div className="pt-4">
               <span className="animate-spin inline-block h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full mr-2 align-middle" />
-              <span className="text-xs text-muted-foreground">Redirecting to campaign list...</span>
+              <span className="text-xs text-zinc-500">Redirecting to campaign list...</span>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 space-y-6">
-              <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-sm space-y-6">
-                <div className="flex items-center gap-2.5 mb-6">
+              <form onSubmit={handleSubmit} className="rounded-[12px] border border-zinc-800 bg-[#0f0f0f] p-6 lg:p-8 shadow-sm space-y-6">
+                <div className="flex items-center gap-2.5 mb-6 text-white">
                   <Upload size={20} />
                   <h2 className="text-lg font-bold tracking-tight">Upload Phone List for Outbound Calls</h2>
                 </div>
@@ -228,28 +233,28 @@ export default function NewCampaignPage() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground tracking-wide">Campaign Name</label>
+                  <label className="text-xs font-semibold text-zinc-400 tracking-wide">Campaign Name</label>
                   <input
                     type="text"
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
                     placeholder="Enter campaign name"
-                    className="w-full h-12 bg-background border border-border rounded-xl px-4 text-sm placeholder-muted-foreground focus:outline-none focus:border-muted-foreground transition"
+                    className="w-full h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl px-4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground tracking-wide">Choose Script</label>
+                  <label className="text-xs font-semibold text-zinc-400 tracking-wide">Choose Script</label>
                   <div className="relative">
                     <select
                       value={selectedScript}
                       onChange={(e) => setSelectedScript(e.target.value)}
-                      className="w-full h-12 bg-background border border-border rounded-xl px-4 text-sm focus:outline-none focus:border-muted-foreground transition appearance-none cursor-pointer"
+                      className="w-full h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition appearance-none cursor-pointer"
                     >
-                      <option value="feedback-collection">Feedback Collection Script</option>
-                      <option value="reservation">Reservation Script</option>
+                      <option value="feedback-collection" className="bg-[#0f0f0f]">Feedback Collection Script</option>
+                      <option value="reservation" className="bg-[#0f0f0f]">Reservation Script</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -258,18 +263,18 @@ export default function NewCampaignPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground tracking-wide">Campaign Status</label>
+                  <label className="text-xs font-semibold text-zinc-400 tracking-wide">Campaign Status</label>
                   <div className="relative">
                     <select
                       value={campaignStatus}
                       onChange={(e) => setCampaignStatus(e.target.value)}
-                      className="w-full h-12 bg-background border border-border rounded-xl px-4 text-sm focus:outline-none focus:border-muted-foreground transition appearance-none cursor-pointer"
+                      className="w-full h-12 bg-[#0a0a0a] border border-zinc-800 rounded-xl px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition appearance-none cursor-pointer"
                     >
-                      <option value="draft">Draft</option>
-                      <option value="running">Running</option>
-                      <option value="paused">Paused</option>
+                      <option value="draft" className="bg-[#0f0f0f]">Draft</option>
+                      <option value="running" className="bg-[#0f0f0f]">Running</option>
+                      <option value="paused" className="bg-[#0f0f0f]">Paused</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -278,18 +283,18 @@ export default function NewCampaignPage() {
                 </div>
 
                 <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-border" />
-                  <span className="flex-shrink mx-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">UPLOAD CONTACT LIST</span>
-                  <div className="flex-grow border-t border-border" />
+                  <div className="flex-grow border-t border-zinc-800" />
+                  <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">UPLOAD CONTACT LIST</span>
+                  <div className="flex-grow border-t border-zinc-800" />
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-medium">Support .csv, .xlsx, .txt files</span>
+                    <span className="text-zinc-400 font-medium">Support .csv, .xlsx, .txt files</span>
                     <button
                       type="button"
                       onClick={handleDownloadSample}
-                      className="flex items-center gap-1.5 font-semibold text-muted-foreground hover:text-foreground transition"
+                      className="flex items-center gap-1.5 font-semibold text-zinc-400 hover:text-white transition"
                     >
                       <Download size={13} />
                       Download sample file
@@ -299,7 +304,7 @@ export default function NewCampaignPage() {
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFileChange(e.dataTransfer.files[0]); }}
                     onClick={() => fileInputRef.current?.click()}
-                    className="border border-dashed border-border hover:border-muted-foreground bg-background rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200"
+                    className="border border-dashed border-zinc-800 hover:border-zinc-700 bg-[#0a0a0a] rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200"
                   >
                     <input
                       type="file"
@@ -308,24 +313,24 @@ export default function NewCampaignPage() {
                       accept=".csv,.xlsx,.xls,.txt"
                       className="hidden"
                     />
-                    <Upload size={32} className="mb-3" />
-                    <p className="text-sm font-semibold">Drop file here or click to upload</p>
-                    <p className="text-xs text-muted-foreground mt-1">CSV, XLSX, or TXT</p>
+                    <Upload size={32} className="mb-3 text-zinc-500" />
+                    <p className="text-sm font-semibold text-white">Drop file here or click to upload</p>
+                    <p className="text-xs text-zinc-500 mt-1">CSV, XLSX, or TXT</p>
                   </div>
                 </div>
 
                 {selectedFile && (
-                  <div className="flex items-center justify-between rounded-xl bg-background border border-border px-4 h-12">
+                  <div className="flex items-center justify-between rounded-xl bg-[#0a0a0a] border border-zinc-800 px-4 h-12">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <span className="text-xs font-semibold truncate max-w-[280px]">{selectedFile.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-medium uppercase shrink-0">
+                      <span className="text-xs font-semibold truncate max-w-[280px] text-white">{selectedFile.name}</span>
+                      <span className="text-[10px] text-zinc-500 font-medium uppercase shrink-0">
                         ({(selectedFile.size / 1024).toFixed(1)} KB)
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleFileChange(null)}
-                      className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground hover:text-foreground transition"
+                      className="flex items-center gap-1 text-[11px] font-bold text-zinc-400 hover:text-white transition"
                     >
                       Clear File
                     </button>
@@ -335,11 +340,11 @@ export default function NewCampaignPage() {
                 <button
                   type="submit"
                   disabled={submitting || parsing || !campaignName.trim() || !selectedFile}
-                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-foreground text-background font-semibold text-sm transition duration-200 disabled:opacity-40 disabled:cursor-not-allowed select-none active:scale-[0.98]"
+                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-white text-black font-semibold text-sm transition duration-200 disabled:opacity-40 disabled:cursor-not-allowed select-none active:scale-[0.98] hover:bg-zinc-200"
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="animate-spin" size={16} />
+                      <Loader2 className="animate-spin text-black" size={16} />
                       Creating Campaign...
                     </>
                   ) : (
@@ -350,10 +355,10 @@ export default function NewCampaignPage() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="rounded-2xl border border-border bg-card p-6 lg:p-8 shadow-sm">
-                <h2 className="text-lg font-bold mb-6">Campaign Summary</h2>
+              <div className="rounded-[12px] border border-zinc-800 bg-[#0f0f0f] p-6 lg:p-8 shadow-sm">
+                <h2 className="text-lg font-bold mb-6 text-white">Campaign Summary</h2>
                 {!selectedFile ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center py-16 text-center text-zinc-500">
                     <p className="text-xs max-w-[180px] leading-relaxed">Upload a contact list to see campaign summary</p>
                   </div>
                 ) : (
@@ -367,10 +372,10 @@ export default function NewCampaignPage() {
                       { label: "Total Time", value: parsing ? null : formatTotalTime(fileStats?.valid ?? 0) },
                     ].map(({ label, value }) => (
                       <div key={label}>
-                        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-                        <p className="mt-1 text-sm font-bold truncate">
+                         <p className="text-xs font-semibold text-zinc-500">{label}</p>
+                         <p className="mt-1 text-sm font-bold truncate text-white">
                           {value === null ? (
-                            <span className="inline-block animate-pulse bg-muted h-4 w-12 rounded" />
+                            <span className="inline-block animate-pulse bg-zinc-800 h-4 w-12 rounded" />
                           ) : (
                             value
                           )}
@@ -384,6 +389,6 @@ export default function NewCampaignPage() {
           </div>
         )}
       </div>
-    </PageContainer>
+    </div>
   );
 }

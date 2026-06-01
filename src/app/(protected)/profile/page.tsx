@@ -30,8 +30,7 @@ interface DashboardSummary {
 }
 
 const now = new Date();
-const startDateObj = new Date(now);
-startDateObj.setDate(now.getDate() - 29);
+const startDateObj = new Date(now.getFullYear(), now.getMonth(), 1);
 
 const fmt = (d: Date) => d.toISOString().split("T")[0];
 

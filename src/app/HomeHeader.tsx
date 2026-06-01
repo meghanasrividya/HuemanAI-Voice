@@ -2,17 +2,38 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 
+function isTokenExpired(token: string | null): boolean {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 export default function HomeHeader() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, token, logout } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (isTokenExpired(token)) {
+      logout();
+    }
+  }, [token, logout]);
+
+  const showAuthenticatedUI = mounted && isAuthenticated && user;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-black">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-10">
-        <Image src="/logo.png" alt="HuëmanAI" width={420} height={120} className="h-24 w-auto object-contain" />
+        <Image src="/logo.png" alt="HuëmanAI" width={420} height={120} className="h-[67px] w-auto object-contain" />
 
-        {isAuthenticated && user ? (
+        {showAuthenticatedUI ? (
           <div className="flex items-center gap-14 text-base">
             <span className="text-white/60">
               Welcome, <span className="text-white/80">{user.first_name || user.email}</span>

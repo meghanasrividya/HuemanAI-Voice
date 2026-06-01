@@ -38,31 +38,31 @@ export default function DateRangeFilter({
     const labelColor = isAmber
         ? "text-[#f59e0b]"
         : isBlue
-        ? "text-[#2563eb]"
-        : isPurple
-        ? "text-[#b158ff]"
-        : "text-[#10b981]";
+            ? "text-[#2563eb]"
+            : isPurple
+                ? "text-[#b158ff]"
+                : "text-[#10b981]";
     const activeButtonClass = isAmber
         ? "bg-[#251b14] border border-[#f59e0b]/50 text-white font-extrabold"
         : isBlue
-        ? "bg-[#0f1b35] border border-[#2563eb]/50 text-white font-extrabold"
-        : isPurple
-        ? "bg-[#210d33] border border-[#b158ff]/50 text-white font-extrabold"
-        : "bg-[#0c2c1e] border border-[#10b981]/50 text-white font-extrabold";
+            ? "bg-[#0f1b35] border border-[#2563eb]/50 text-white font-extrabold"
+            : isPurple
+                ? "bg-[#210d33] border border-[#b158ff]/50 text-white font-extrabold"
+                : "bg-[#0c2c1e] border border-[#10b981]/50 text-white font-extrabold";
     const selectFocusClass = isAmber
         ? "focus:border-amber-500/50"
         : isBlue
-        ? "focus:border-blue-500/50"
-        : isPurple
-        ? "focus:border-[#b158ff]/50"
-        : "focus:border-emerald-500/50";
+            ? "focus:border-blue-500/50"
+            : isPurple
+                ? "focus:border-[#b158ff]/50"
+                : "focus:border-emerald-500/50";
     const inputFocusClass = isAmber
         ? "focus:border-amber-500/50"
         : isBlue
-        ? "focus:border-blue-500/50"
-        : isPurple
-        ? "focus:border-[#b158ff]/50"
-        : "focus:border-emerald-500/50";
+            ? "focus:border-blue-500/50"
+            : isPurple
+                ? "focus:border-[#b158ff]/50"
+                : "focus:border-emerald-500/50";
 
     return (
         <div className="mb-6 pb-6 border-b border-[#161616]">
@@ -110,11 +110,10 @@ export default function DateRangeFilter({
                                 setDateRangeType(btn.id as any);
                                 setPage(1);
                             }}
-                            className={`py-2 px-3 text-[10px] font-bold rounded-[8px] text-center transition-all ${
-                                active
+                            className={`py-2 px-3 text-[10px] font-bold rounded-[8px] text-center transition-all ${active
                                     ? activeButtonClass
                                     : "bg-[#111111] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
-                            }`}
+                                }`}
                         >
                             {btn.label}
                         </button>

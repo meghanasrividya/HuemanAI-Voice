@@ -162,7 +162,7 @@ export default function RecordingCard({ durationSeconds, durationStr, recordingU
   const progressPct = durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
 
   return (
-    <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl p-5 space-y-5">
+    <div className="border border-[#1e1e24]/60 bg-[#121214] rounded-xl p-5 space-y-5 transition-all duration-200 hover:-translate-y-1 hover:border-[#2a2a32] hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       {/* Header */}
       <div>
         <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Recording</p>
