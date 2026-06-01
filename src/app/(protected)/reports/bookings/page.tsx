@@ -3,17 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
-    LayoutDashboard,
-    Phone,
-    ClipboardList,
-    TrendingUp,
-    PhoneCall,
-    FileBarChart2,
-    Sparkles,
-    Settings,
-    ChevronLeft,
     ChevronRight,
-    LogOut,
     Calendar,
     Printer,
     Download,
@@ -22,19 +12,18 @@ import {
     ArrowLeft,
     AlertCircle,
     Loader2,
-    ClipboardCheck,
 } from "lucide-react";
 import {
-    fetchActionsMetadata,
-    generateActionsReport,
+    fetchBookingsMetadata,
+    generateBookingsReport,
     ReportMetadata,
-    ActionsReportDataResponse as ReportDataResponse,
-    ActionResponseItem as BookingReservation,
-} from "../../../lib/api/reports";
+    ReportDataResponse,
+    BookingReservation,
+} from "../../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
-export default function ActionsReportPage() {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+export default function BookingsReportPage() {
     const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
     const [reportData, setReportData] = useState<ReportDataResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -42,7 +31,7 @@ export default function ActionsReportPage() {
 
     // Filter and Pagination States
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-    const [dateField, setDateField] = useState<string>("created_at");
+    const [dateField, setDateField] = useState<string>("visit_date");
     const [dateRangeType, setDateRangeType] = useState<"7days" | "30days" | "month" | "custom" | null>(null);
     
     // Default custom date range: past 30 days
@@ -99,20 +88,12 @@ export default function ActionsReportPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Helper to get columns metadata with proper fallback for null fields (created_at)
-    const getColInfo = (colKey: string) => {
-        if (colKey === "created_at") {
-            return { label: "created_at", type: "UNKNOWN" };
-        }
-        return metadata?.columns[colKey] || { label: colKey, type: "UNKNOWN" };
-    };
-
     // 1. Fetch Metadata on Mount
     useEffect(() => {
         const loadMetadata = async () => {
             try {
                 setLoading(true);
-                const data = await fetchActionsMetadata();
+                const data = await fetchBookingsMetadata();
                 setMetadata(data);
                 setSelectedColumns(data.defaultColumns || []);
                 if (data.dateColumns && data.dateColumns.length > 0) {
@@ -226,12 +207,12 @@ export default function ActionsReportPage() {
                     }
                 }
 
-                const res = await generateActionsReport({
+                const res = await generateBookingsReport({
                     columns: selectedColumns,
                     dateField,
-                    startDate: start,
-                    endDate: end,
-                    search: debouncedSearch,
+                    startDate: start || undefined,
+                    endDate: end || undefined,
+                    search: debouncedSearch || undefined,
                     page,
                     pageSize,
                     filters: activeFilters,
@@ -266,13 +247,9 @@ export default function ActionsReportPage() {
                 if (prev.length <= 1) return prev; // Keep at least one column
                 return prev.filter((k) => k !== colKey);
             } else {
+                // Keep the order matching metadata columns if possible
                 if (metadata?.columns) {
-                    // Match order inside metadata
-                    const allPossible = Object.keys(metadata.columns);
-                    if (!allPossible.includes("created_at")) {
-                        allPossible.push("created_at"); // ensure created_at is in sorting order
-                    }
-                    return allPossible.filter(
+                    return Object.keys(metadata.columns).filter(
                         (k) => k === colKey || prev.includes(k)
                     );
                 }
@@ -282,8 +259,8 @@ export default function ActionsReportPage() {
     };
 
     // Calculate avatar gradient and initials
-    const getInitials = (name?: string | null) => {
-        if (!name || name === "—") return "";
+    const getInitials = (name?: string) => {
+        if (!name) return "";
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -291,15 +268,15 @@ export default function ActionsReportPage() {
         return name.slice(0, 2).toUpperCase();
     };
 
-    const getAvatarStyle = (name?: string | null) => {
-        if (!name || name === "—") return "bg-zinc-800 text-zinc-400 border border-zinc-700/50";
+    const getAvatarStyle = (name?: string) => {
+        if (!name) return "bg-amber-600/20 text-amber-500";
         const colors = [
-            "bg-gradient-to-br from-[#f97316] to-[#ea580c] text-white", // Orange (matching DL, TJ, SD in mockup)
-            "bg-gradient-to-br from-[#eab308] to-[#ca8a04] text-white", // Yellow (matching TF in mockup)
-            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald (matching MT in mockup)
-            "bg-gradient-to-br from-[#6b7280] to-[#4b5563] text-white", // Grey (matching KL in mockup)
+            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
+            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald
             "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue
             "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white", // Purple
+            "bg-gradient-to-br from-[#ec4899] to-[#db2777] text-white", // Pink
+            "bg-gradient-to-br from-[#06b6d4] to-[#0891b2] text-white", // Cyan
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
@@ -309,8 +286,8 @@ export default function ActionsReportPage() {
         return colors[index];
     };
 
-    // Date formatting helper with exact time: 17 Mar 2026, 15:36
-    const formatDateTime = (dateStr?: string | null) => {
+    // Date formatting helper: 22 Mar 2026
+    const formatDate = (dateStr?: string) => {
         if (!dateStr) return "-";
         try {
             const date = new Date(dateStr);
@@ -322,27 +299,10 @@ export default function ActionsReportPage() {
             ];
             const month = monthNames[date.getMonth()];
             const year = date.getFullYear();
-            const hours = String(date.getHours()).padStart(2, "0");
-            const minutes = String(date.getMinutes()).padStart(2, "0");
-            return `${day} ${month} ${year}, ${hours}:${minutes}`;
+            return `${day} ${month} ${year}`;
         } catch {
             return dateStr;
         }
-    };
-
-    // Request type mapper helper: misc -> Callback Needed, cancellation -> Cancellation, etc.
-    const mapRequestType = (type?: string) => {
-        if (!type) return "-";
-        const mapping: Record<string, string> = {
-            misc: "Callback Needed",
-            cancellation: "Cancellation",
-            large_group: "Large Group",
-            update: "Update",
-            waitlist: "Waitlist",
-            promotions: "Promotions",
-            incomplete_booking: "Incomplete Booking",
-        };
-        return mapping[type.toLowerCase()] || type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     };
 
     // Export CSV Helper
@@ -350,20 +310,16 @@ export default function ActionsReportPage() {
         if (!reportData || !metadata) return;
 
         // Header Row
-        const headers = selectedColumns.map((colKey) => getColInfo(colKey).label);
+        const headers = selectedColumns.map((colKey) => metadata.columns[colKey]?.label || colKey);
         
         // Data Rows
         const rows = reportData.data.map((row) =>
             selectedColumns.map((colKey) => {
                 let val = row[colKey];
                 if (val === undefined || val === null) return "";
-                // If it is a request_type, map it
-                if (colKey === "request_type") {
-                    val = mapRequestType(String(val));
-                }
                 // If it is a date column, format it
-                else if (metadata.dateColumns.includes(colKey)) {
-                    val = formatDateTime(String(val));
+                if (metadata.dateColumns.includes(colKey)) {
+                    val = formatDate(String(val));
                 }
                 // Escape commas and double quotes
                 const stringVal = String(val).replace(/"/g, '""');
@@ -376,7 +332,7 @@ export default function ActionsReportPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `actions_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.setAttribute("download", `bookings_report_${new Date().toISOString().split("T")[0]}.csv`);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
@@ -412,15 +368,11 @@ export default function ActionsReportPage() {
         if (!reportData || activeFilters.length === 0) return reportData;
         const filtered = reportData.data.filter(row =>
             activeFilters.every(f => {
-                let cellVal = row[f.column];
-                if (f.column === "request_type") {
-                    cellVal = mapRequestType(String(cellVal));
-                }
-                const cellValStr = String(cellVal ?? "").toLowerCase().trim();
+                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
                 const filterVal = f.value.toLowerCase().trim();
-                if (f.operator === "equals") return cellValStr === filterVal;
-                if (f.operator === "contains") return cellValStr.includes(filterVal);
-                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellValStr === v);
+                if (f.operator === "equals") return cellVal === filterVal;
+                if (f.operator === "contains") return cellVal.includes(filterVal);
+                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
                 return true;
             })
         );
@@ -428,7 +380,7 @@ export default function ActionsReportPage() {
     }, [reportData, activeFilters]);
 
     return (
-        <div className="h-screen bg-[#0a0a0a] text-white flex overflow-hidden relative">
+        <div className="h-full bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
             {/* Print Specific CSS */}
             <style jsx global>{`
                 @media print {
@@ -490,126 +442,8 @@ export default function ActionsReportPage() {
                 }
             `}</style>
 
-            {/* ── Sidebar ── */}
-            <aside
-                className={`no-print shrink-0 bg-[#111111] border-r border-[#232323] flex flex-col justify-between transition-all duration-300 ${
-                    sidebarCollapsed ? "w-[64px]" : "w-[240px]"
-                }`}
-            >
-                {/* Logo */}
-                <div>
-                    <div
-                        className={`h-[60px] flex items-center border-b border-[#232323] ${
-                            sidebarCollapsed ? "px-[18px]" : "px-[20px]"
-                        }`}
-                    >
-                        {sidebarCollapsed ? (
-                            <span className="text-[13px] font-black tracking-tight text-white">H</span>
-                        ) : (
-                            <h1 className="text-[14px] font-black tracking-tight text-white">HuemanAI</h1>
-                        )}
-                    </div>
-
-                    {/* Nav */}
-                    <nav className="px-3 pt-4 space-y-1">
-                        {[
-                            { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard" },
-                            { icon: <Phone size={16} />, label: "Calls", href: "/calls" },
-                            { icon: <ClipboardList size={16} />, label: "Actions", href: "/actions" },
-                            { icon: <TrendingUp size={16} />, label: "Insights", href: "/insights" },
-                            { icon: <PhoneCall size={16} />, label: "Outbound", href: "/outbound" },
-                            { icon: <FileBarChart2 size={16} />, label: "Reports", href: "/reports", active: true },
-                            { icon: <Sparkles size={16} />, label: "Netra AI", subLabel: "Coming Soon", purple: true },
-                            { icon: <Settings size={16} />, label: "Admin", href: "/admin" },
-                        ].map((item) => {
-                            const content = (
-                                <>
-                                    <span className={`shrink-0 ${item.purple ? "text-[#b158ff]" : ""}`}>
-                                        {item.icon}
-                                    </span>
-                                    {!sidebarCollapsed && (
-                                        <span className="leading-tight min-w-0">
-                                            <span className="block text-[11px] font-semibold truncate">{item.label}</span>
-                                            {item.subLabel && (
-                                                <span className="block text-[9px] font-medium text-zinc-500 mt-0.5">
-                                                    {item.subLabel}
-                                                </span>
-                                            )}
-                                        </span>
-                                    )}
-                                </>
-                            );
-
-                            const className = `w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${
-                                sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
-                            } ${
-                                item.active
-                                    ? "bg-[#2a2a2a] text-white"
-                                    : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-200"
-                            }`;
-
-                            if (item.href) {
-                                return (
-                                    <Link
-                                        key={item.label}
-                                        href={item.href}
-                                        title={sidebarCollapsed ? item.label : undefined}
-                                        className={className}
-                                    >
-                                        {content}
-                                    </Link>
-                                );
-                            }
-
-                            return (
-                                <button
-                                    key={item.label}
-                                    title={sidebarCollapsed ? item.label : undefined}
-                                    className={className}
-                                    disabled={item.label === "Netra AI"}
-                                >
-                                    {content}
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
-
-                {/* Bottom */}
-                <div className={`pb-5 ${sidebarCollapsed ? "px-3" : "px-4"}`}>
-                    {!sidebarCollapsed && (
-                        <>
-                            <div className="flex items-center gap-3 mb-4 px-1">
-                                <div className="w-7 h-7 rounded-full bg-[#2a2a2a] flex items-center justify-center text-[10px] font-black shrink-0">
-                                    F
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-semibold text-[11px] leading-tight truncate">Fredrick</p>
-                                    <p className="text-[9px] text-zinc-500 truncate">fredrick@huemanai.co.uk</p>
-                                </div>
-                            </div>
-
-                            <button className="flex items-center gap-2 text-zinc-500 hover:text-zinc-200 text-[10px] transition-colors px-1 mb-5">
-                                <LogOut size={13} />
-                                Logout
-                            </button>
-                        </>
-                    )}
-
-                    {/* Collapse toggle */}
-                    <button
-                        onClick={() => setSidebarCollapsed((v) => !v)}
-                        className={`flex items-center justify-center w-7 h-7 rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] hover:bg-[#222] transition-colors text-zinc-500 hover:text-zinc-200 ${
-                            sidebarCollapsed ? "mx-auto" : "ml-auto"
-                        }`}
-                    >
-                        {sidebarCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-                    </button>
-                </div>
-            </aside>
-
             {/* ── Main Content Area ── */}
-            <main className="flex-1 overflow-y-auto bg-[#0a0a0a] min-w-0 flex flex-col">
+            <main className="flex-1 overflow-y-auto bg-[#0a0a0a] flex flex-col">
                 {/* ── Top Nav Header with Back Action & Print/Export Buttons ── */}
                 <div className="no-print w-full px-[32px] pt-[24px] pb-[16px] border-b border-[#161616] flex items-center justify-between actions-header shrink-0">
                     <div className="flex items-center gap-3">
@@ -622,7 +456,7 @@ export default function ActionsReportPage() {
                         <div className="flex items-center text-[13px] font-semibold text-zinc-400 gap-1.5">
                             <Link href="/reports" className="hover:text-zinc-200 transition-colors">Reports</Link>
                             <span className="text-zinc-600 font-normal">&gt;</span>
-                            <span className="text-white font-bold">Actions Reports</span>
+                            <span className="text-white font-bold">Bookings Reports</span>
                         </div>
                     </div>
 
@@ -636,7 +470,7 @@ export default function ActionsReportPage() {
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="h-[36px] px-4 rounded-[8px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
+                            className="h-[36px] px-4 rounded-[8px] bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
                         >
                             <Download size={13} />
                             Export CSV
@@ -651,7 +485,7 @@ export default function ActionsReportPage() {
                         <h2 className="text-[14px] font-bold text-white mb-1">Configuration</h2>
                         <p className="text-zinc-500 text-[10px] mb-6">Customize columns, dates & filters</p>
 
-                        {/* DATE RANGE FILTER BOX (Using Blue theme) */}
+                        {/* DATE RANGE FILTER BOX */}
                         <DateRangeFilter
                             metadata={metadata}
                             dateField={dateField}
@@ -663,7 +497,7 @@ export default function ActionsReportPage() {
                             customEndDate={customEndDate}
                             setCustomEndDate={setCustomEndDate}
                             setPage={setPage}
-                            theme="blue"
+                            theme="amber"
                             showDropdown={true}
                         />
 
@@ -675,12 +509,12 @@ export default function ActionsReportPage() {
                                     onClick={() => setActiveTab("columns")}
                                     className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${
                                         activeTab === "columns"
-                                            ? "border-[#2563eb] text-[#2563eb]"
+                                            ? "border-[#f59e0b] text-[#f59e0b]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
                                     Columns
-                                    <span className="px-1.5 py-0.5 rounded-full bg-[#0f2147] border border-[#2563eb]/20 text-[9px] text-[#2563eb] font-black">
+                                    <span className="px-1.5 py-0.5 rounded-full bg-[#251b14] border border-[#f59e0b]/20 text-[9px] text-[#f59e0b] font-black">
                                         {selectedColumns.length}
                                     </span>
                                 </button>
@@ -688,7 +522,7 @@ export default function ActionsReportPage() {
                                     onClick={() => setActiveTab("filters")}
                                     className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${
                                         activeTab === "filters"
-                                            ? "border-[#2563eb] text-[#2563eb]"
+                                            ? "border-[#f59e0b] text-[#f59e0b]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
@@ -701,9 +535,8 @@ export default function ActionsReportPage() {
                                 {activeTab === "columns" ? (
                                     <div className="space-y-1">
                                         {metadata &&
-                                            Array.from(new Set([...Object.keys(metadata.columns), "created_at"])).map((colKey) => {
+                                            Object.entries(metadata.columns).map(([colKey, colInfo]) => {
                                                 const checked = selectedColumns.includes(colKey);
-                                                const colInfo = getColInfo(colKey);
                                                 return (
                                                     <div
                                                         key={colKey}
@@ -715,11 +548,11 @@ export default function ActionsReportPage() {
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            {/* Custom Circle Checkbox (Blue) */}
+                                                            {/* Custom Circle Checkbox */}
                                                             <div
                                                                 className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${
                                                                     checked
-                                                                        ? "border-[#2563eb] bg-[#2563eb] text-black"
+                                                                        ? "border-[#f59e0b] bg-[#f59e0b] text-black"
                                                                         : "border-zinc-700 bg-transparent text-transparent"
                                                                 }`}
                                                             >
@@ -747,8 +580,8 @@ export default function ActionsReportPage() {
                                     <div className="space-y-3">
                                         {/* ADD FILTER card */}
                                         <div className="rounded-[10px] border border-[#1e1e1e] bg-[#0f0f0f]">
-                                            <div className="border-l-2 border-[#2563eb] p-3 rounded-r-[9px] rounded-l-[8px]">
-                                                <p className="text-[9px] font-black tracking-widest text-[#2563eb] uppercase mb-3">Add Filter</p>
+                                            <div className="border-l-2 border-[#f59e0b] p-3 rounded-r-[9px] rounded-l-[8px]">
+                                                <p className="text-[9px] font-black tracking-widest text-[#f59e0b] uppercase mb-3">Add Filter</p>
 
                                                 {/* Column selector custom dropdown */}
                                                 <div className="relative mb-2">
@@ -761,7 +594,7 @@ export default function ActionsReportPage() {
                                                         className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-left transition-colors hover:border-[#333]"
                                                     >
                                                         <span className={pendingFilterColumn ? "text-white font-semibold" : "text-zinc-500"}>
-                                                            {pendingFilterColumn ? getColInfo(pendingFilterColumn).label : "Select Column"}
+                                                            {pendingFilterColumn ? (metadata?.columns[pendingFilterColumn]?.label || pendingFilterColumn) : "Select Column"}
                                                         </span>
                                                         <ChevronRight size={12} className={`text-zinc-500 transition-transform ${columnDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                     </button>
@@ -772,7 +605,7 @@ export default function ActionsReportPage() {
                                                             ref={columnDropdownRef}
                                                             className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-50 shadow-2xl max-h-[240px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
                                                         >
-                                                            {Array.from(new Set([...Object.keys(metadata.columns), "created_at"])).map((colKey) => (
+                                                            {Object.entries(metadata.columns).map(([colKey, colInfo]) => (
                                                                 <button
                                                                     key={colKey}
                                                                     onClick={() => {
@@ -780,10 +613,10 @@ export default function ActionsReportPage() {
                                                                         setColumnDropdownOpen(false);
                                                                     }}
                                                                     className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
-                                                                        pendingFilterColumn === colKey ? "text-[#2563eb]" : "text-zinc-300"
+                                                                        pendingFilterColumn === colKey ? "text-[#f59e0b]" : "text-zinc-300"
                                                                     }`}
                                                                 >
-                                                                    {getColInfo(colKey).label}
+                                                                    {colInfo.label}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -819,7 +652,7 @@ export default function ActionsReportPage() {
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#2563eb]" : "text-transparent"}`}>✓</span>
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#f59e0b]" : "text-transparent"}`}>✓</span>
                                                                         {op.label}
                                                                     </button>
                                                                 ))}
@@ -842,7 +675,7 @@ export default function ActionsReportPage() {
                                                                 setPendingFilterOperator("equals");
                                                             }
                                                         }}
-                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-blue-500/50"
+                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-amber-500/50"
                                                     />
                                                 </div>
 
@@ -854,18 +687,18 @@ export default function ActionsReportPage() {
                                                             column: pendingFilterColumn,
                                                             operator: pendingFilterOperator,
                                                             value: pendingFilterValue.trim(),
-                                                        }]);
+                                                            }]);
                                                         setPage(1);
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
                                                         setPendingFilterOperator("equals");
                                                     }}
                                                     disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
-                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#1d4ed8] to-[#1e40af] hover:from-[#2563eb] hover:to-[#1d4ed8] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#b45309] to-[#92400e] hover:from-[#c05a0a] hover:to-[#a14a0f] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
                                                 </button>
-                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: status = open, priority = high</p>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: Area = Patio, Covers &gt; 4</p>
                                             </div>
                                         </div>
 
@@ -875,9 +708,9 @@ export default function ActionsReportPage() {
                                                 {activeFilters.map((f, i) => (
                                                     <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
                                                         <span className="text-[10px] font-medium leading-tight">
-                                                            <span className="text-white font-bold">{getColInfo(f.column).label}</span>
+                                                            <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
                                                             <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
-                                                            <span className="text-[#2563eb]">{f.value}</span>
+                                                            <span className="text-[#f59e0b]">{f.value}</span>
                                                         </span>
                                                         <button
                                                             onClick={() => {
@@ -907,7 +740,7 @@ export default function ActionsReportPage() {
                         </div>
                     </div>
 
-                    {/* ── Right Content Area: Actions Report Preview Table ── */}
+                    {/* ── Right Content Area: Main Booking Report Preview Table ── */}
                     <div className="flex-1 flex flex-col p-[32px] overflow-y-auto min-h-0 bg-[#070707]">
                         {/* Error Alert Box */}
                         {error && (
@@ -925,19 +758,19 @@ export default function ActionsReportPage() {
                             {/* Table Header Filter / Title / Search Controls */}
                             <div className="no-print p-6 border-b border-[#161616] flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#2563eb]/10 border border-[#2563eb]/20 flex items-center justify-center text-[#2563eb]">
-                                        <ClipboardCheck size={18} />
+                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center text-[#f59e0b]">
+                                        <Calendar size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-[14px] font-bold text-white">Action Report Preview</h3>
-                                        <p className="text-[#2563eb] text-[10px] font-bold mt-0.5">
+                                        <h3 className="text-[14px] font-bold text-white">Booking Report Preview</h3>
+                                        <p className="text-[#f59e0b] text-[10px] font-bold mt-0.5">
                                             {loading && !reportData ? (
                                                 <span className="flex items-center gap-1.5">
                                                     <Loader2 className="animate-spin" size={10} />
                                                     Checking database...
                                                 </span>
                                             ) : (
-                                                `${reportData?.total || 0} actions found`
+                                                `${reportData?.total || 0} reservations found`
                                             )}
                                         </p>
                                     </div>
@@ -949,7 +782,7 @@ export default function ActionsReportPage() {
                                         placeholder="Search results..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-blue-500/50"
+                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-amber-500/50"
                                     />
                                     <Search size={12} className="absolute left-3 top-3.5 text-zinc-500" />
                                 </div>
@@ -960,22 +793,22 @@ export default function ActionsReportPage() {
                                 {loading && (
                                     <div className="no-print absolute inset-0 bg-[#0f0f0f]/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-[#2563eb]" size={32} />
+                                            <Loader2 className="animate-spin text-[#f59e0b]" size={32} />
                                             <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Syncing records...</span>
                                         </div>
                                     </div>
                                 )}
 
                                 <table className="w-full border-collapse text-left">
-                                    {/* Warm Navy Header matching preview design */}
-                                    <thead className="bg-[#0b1b36] border-b border-[#2563eb]/10 sticky top-0 z-1">
+                                    {/* Warm Deep Bronze Header matching custom preview design */}
+                                    <thead className="bg-[#20150e] border-b border-[#f59e0b]/10 sticky top-0 z-1">
                                         <tr>
                                             {selectedColumns.map((colKey) => (
                                                 <th
                                                     key={colKey}
-                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#0f2144]"
+                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#281c12]"
                                                 >
-                                                    {getColInfo(colKey).label === "created_at" ? "Created At" : getColInfo(colKey).label}
+                                                    {metadata?.columns[colKey]?.label || colKey}
                                                 </th>
                                             ))}
                                         </tr>
@@ -989,20 +822,20 @@ export default function ActionsReportPage() {
                                                 >
                                                     {selectedColumns.map((colKey) => {
                                                         const val = row[colKey];
-                                                        const isDate = metadata?.dateColumns?.includes(colKey) || colKey === "created_at";
+                                                        const isDate = metadata?.dateColumns?.includes(colKey);
 
-                                                        // Guest name column gets initials avatar bubble
-                                                        if (colKey === "guest_name") {
-                                                            const nameStr = val ? String(val) : "—";
+                                                        // Customer name column gets initials avatar bubble
+                                                        if (colKey === "customer_name") {
+                                                            const nameStr = String(val || "-");
                                                             return (
                                                                 <td key={colKey} className="px-6 py-4 border-b border-[#161616]">
                                                                     <div className="flex items-center gap-3">
                                                                         <div
                                                                             className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${getAvatarStyle(
-                                                                                val
+                                                                                nameStr
                                                                             )}`}
                                                                         >
-                                                                            {getInitials(val)}
+                                                                            {getInitials(nameStr)}
                                                                         </div>
                                                                         <span className="font-bold text-white">{nameStr}</span>
                                                                     </div>
@@ -1010,42 +843,14 @@ export default function ActionsReportPage() {
                                                             );
                                                         }
 
-                                                        // Display request type mapped text
-                                                        if (colKey === "request_type") {
-                                                            return (
-                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold">
-                                                                    {mapRequestType(String(val))}
-                                                                </td>
-                                                            );
-                                                        }
-
-                                                        // Notes formatting (faint, formatted whitespace)
-                                                        if (colKey === "notes") {
-                                                            const notesText = String(val || "").trim();
-                                                            return (
-                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-400 font-medium max-w-[340px] break-words whitespace-pre-line leading-relaxed">
-                                                                    {notesText ? notesText : "—"}
-                                                                </td>
-                                                            );
-                                                        }
-
-                                                        // Comments / Resolution notes formatting
-                                                        if (colKey === "comments" || colKey === "resolution_notes") {
-                                                            const text = String(val || "").trim();
-                                                            return (
-                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold max-w-[280px] break-words whitespace-pre-line leading-relaxed">
-                                                                    {text ? text : "—"}
-                                                                </td>
-                                                            );
-                                                        }
-
-                                                        // Default text fallback formatting
                                                         return (
                                                             <td
                                                                 key={colKey}
-                                                                className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold"
+                                                                className={`px-6 py-4 border-b border-[#161616] ${
+                                                                    colKey === "covers" ? "font-bold text-[#f59e0b]" : "text-zinc-300 font-semibold"
+                                                                }`}
                                                             >
-                                                                {isDate ? formatDateTime(String(val)) : String(val === undefined || val === null ? "—" : val)}
+                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null ? "-" : val)}
                                                             </td>
                                                         );
                                                     })}
@@ -1057,7 +862,7 @@ export default function ActionsReportPage() {
                                                     colSpan={selectedColumns.length || 1}
                                                     className="px-6 py-12 text-center text-zinc-500 font-medium italic"
                                                 >
-                                                    {!loading && "No matching actions found."}
+                                                    {!loading && "No matching reservations found."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1077,7 +882,7 @@ export default function ActionsReportPage() {
                                         <span className="text-white">
                                             {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
-                                        of <span className="text-[#2563eb] font-black">{reportData.total}</span> results
+                                        of <span className="text-[#f59e0b] font-black">{reportData.total}</span> results
                                     </div>
 
                                     {/* Rows Count Page Selector */}
@@ -1093,7 +898,7 @@ export default function ActionsReportPage() {
                                                     }}
                                                     className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${
                                                         pageSize === size
-                                                            ? "bg-[#2563eb] text-black"
+                                                            ? "bg-[#f59e0b] text-black"
                                                             : "bg-[#161616] text-zinc-400 hover:text-zinc-200 border border-[#232323]"
                                                     }`}
                                                 >
@@ -1123,7 +928,7 @@ export default function ActionsReportPage() {
                                                         onClick={() => !isDots && setPage(Number(pNum))}
                                                         className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
                                                             active
-                                                                ? "bg-[#2563eb] text-black font-extrabold"
+                                                                ? "bg-[#f59e0b] text-black font-extrabold"
                                                                 : isDots
                                                                 ? "text-zinc-600 bg-transparent font-normal cursor-default"
                                                                 : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"

@@ -1,18 +1,11 @@
-"use client";
+import CallDetails from "@/components/calls/info/CallDetails";
 
-import PageContainer from "@/components/layout/PageContainer";
+type Props = {
+  params: Promise<{ callId: string }> | { callId: string };
+};
 
-export default function CallDetailPage({ params }: { params: { callId: string } }) {
-    return (
-        <PageContainer>
-            <div className="flex-1 overflow-auto p-6">
-                <div className="space-y-6">
-                    <div>
-                        <h1 className="text-3xl font-semibold tracking-tight">Call Detail</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">Call ID: {params.callId}</p>
-                    </div>
-                </div>
-            </div>
-        </PageContainer>
-    );
+export default async function CallDetailPage({ params }: Props) {
+  // Await params to guarantee compatibility across Next.js versions (including Next.js 15+)
+  const resolvedParams = await params;
+  return <CallDetails callId={resolvedParams.callId} />;
 }

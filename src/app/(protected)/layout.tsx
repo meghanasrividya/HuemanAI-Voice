@@ -12,7 +12,6 @@ import {
     Phone,
     PhoneOutgoing,
     LogOut,
-    Sparkles,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -57,7 +56,7 @@ export default function ProtectedLayout({ children }: Props) {
                 <aside className="hidden w-64 shrink-0 border-r border-border bg-card lg:flex lg:flex-col">
                     {/* Brand */}
                     <div className="px-5 py-5">
-                        <span className="text-2xl font-bold tracking-tight">HuemanAI</span>
+                        <span className="text-4xl font-bold tracking-tight">HuemanAI</span>
                     </div>
 
                     {/* Nav */}
@@ -92,18 +91,26 @@ export default function ProtectedLayout({ children }: Props) {
                         })}
 
                         {/* Netra AI — coming soon */}
-                        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground/60 cursor-default select-none">
+                        {/* <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground/60 cursor-default select-none">
                             <Sparkles className="h-4 w-4 text-violet-500" />
                             <div className="flex flex-col leading-none">
                                 <span className="font-semibold text-foreground/70">Netra AI</span>
                                 <span className="mt-0.5 text-[11px] text-muted-foreground">Coming Soon</span>
                             </div>
-                        </div>
+                        </div> */}
                     </nav>
 
                     {/* User + logout */}
                     <div className="border-t border-border p-3 space-y-0.5">
-                        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+                        <Link
+                            href="/profile"
+                            className={cn(
+                                "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150",
+                                pathname === "/profile"
+                                    ? "bg-primary/10"
+                                    : "hover:bg-muted"
+                            )}
+                        >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">
                                 {initial}
                             </div>
@@ -111,7 +118,7 @@ export default function ProtectedLayout({ children }: Props) {
                                 <p className="truncate text-sm font-medium">{fullName}</p>
                                 <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                             </div>
-                        </div>
+                        </Link>
                         <button
                             type="button"
                             onClick={handleLogout}
@@ -126,7 +133,7 @@ export default function ProtectedLayout({ children }: Props) {
                 {/* ── Main area ── */}
                 <div className="flex min-w-0 flex-1 flex-col">
                     <main className="flex min-h-0 flex-1 flex-col overflow-auto">
-                        <div className="flex-1 p-6">
+                        <div className="flex-1">
                             {children}
                         </div>
                     </main>

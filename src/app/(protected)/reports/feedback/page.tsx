@@ -3,18 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
-    LayoutDashboard,
-    Phone,
-    ClipboardList,
-    TrendingUp,
-    PhoneCall,
-    FileBarChart2,
-    Sparkles,
-    Settings,
-    ChevronLeft,
     ChevronRight,
-    LogOut,
-    Calendar,
     Printer,
     Download,
     Check,
@@ -22,19 +11,18 @@ import {
     ArrowLeft,
     AlertCircle,
     Loader2,
-    Ticket,
+    MessageSquare,
 } from "lucide-react";
 import {
-    fetchCouponsMetadata,
-    generateCouponsReport,
+    fetchFeedbackMetadata,
+    generateFeedbackReport,
     ReportMetadata,
-    CouponsReportDataResponse as ReportDataResponse,
-    CouponResponseItem as BookingReservation,
-} from "../../../lib/api/reports";
+    FeedbackReportDataResponse as ReportDataResponse,
+    FeedbackResponseItem as BookingReservation,
+} from "../../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
-export default function CouponsReportPage() {
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+export default function FeedbackReportPage() {
     const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
     const [reportData, setReportData] = useState<ReportDataResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -42,9 +30,9 @@ export default function CouponsReportPage() {
 
     // Filter and Pagination States
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-    const [dateField, setDateField] = useState<string>("valid_from");
+    const [dateField, setDateField] = useState<string>("visit_date");
     const [dateRangeType, setDateRangeType] = useState<"7days" | "30days" | "month" | "custom" | null>(null);
-
+    
     // Default custom date range: past 30 days
     const [customStartDate, setCustomStartDate] = useState<string>(() => {
         const d = new Date();
@@ -68,13 +56,11 @@ export default function CouponsReportPage() {
     const [activeFilters, setActiveFilters] = useState<Array<{ column: string; operator: string; value: string }>>([]);
     const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
     const [operatorDropdownOpen, setOperatorDropdownOpen] = useState(false);
-    const [valueDropdownOpen, setValueDropdownOpen] = useState(false);
 
     // Refs for click-outside on custom dropdowns
     const columnDropdownRef = useRef<HTMLDivElement>(null);
     const columnBtnRef = useRef<HTMLButtonElement>(null);
     const operatorDropdownRef = useRef<HTMLDivElement>(null);
-    const valueDropdownRef = useRef<HTMLDivElement>(null);
     const [colDropPos, setColDropPos] = useState({ bottom: 0, left: 0, width: 0 });
 
     // Close dropdowns on outside click
@@ -86,9 +72,6 @@ export default function CouponsReportPage() {
             if (!inColDropdown && !inColBtn) setColumnDropdownOpen(false);
             if (operatorDropdownRef.current && !operatorDropdownRef.current.contains(target)) {
                 setOperatorDropdownOpen(false);
-            }
-            if (valueDropdownRef.current && !valueDropdownRef.current.contains(target)) {
-                setValueDropdownOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -104,29 +87,12 @@ export default function CouponsReportPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Helper to get columns metadata
-    const getColInfo = (colKey: string) => {
-        return metadata?.columns[colKey] || { label: colKey, type: "UNKNOWN" };
-    };
-
-    // Filter value suggestions
-    const filterSuggestions = useMemo(() => {
-        if (!pendingFilterColumn || !pendingFilterValue || !reportData) return [];
-        const valLower = pendingFilterValue.toLowerCase();
-        const uniqueVals = Array.from(
-            new Set(reportData.data.map((row) => String(row[pendingFilterColumn] ?? "")))
-        );
-        return uniqueVals
-            .filter((val) => val && val.toLowerCase().includes(valLower) && val.toLowerCase() !== valLower)
-            .slice(0, 5);
-    }, [pendingFilterColumn, pendingFilterValue, reportData]);
-
     // 1. Fetch Metadata on Mount
     useEffect(() => {
         const loadMetadata = async () => {
             try {
                 setLoading(true);
-                const data = await fetchCouponsMetadata();
+                const data = await fetchFeedbackMetadata();
                 setMetadata(data);
                 setSelectedColumns(data.defaultColumns || []);
                 if (data.dateColumns && data.dateColumns.length > 0) {
@@ -229,16 +195,18 @@ export default function CouponsReportPage() {
                 else if (dateRangeType === "custom") {
                     if (customStartDate) {
                         const [y, m, d] = customStartDate.split("-").map(Number);
+
                         start = createUTCDate(y, m - 1, d);
                     }
 
                     if (customEndDate) {
                         const [y, m, d] = customEndDate.split("-").map(Number);
+
                         end = createUTCDate(y, m - 1, d, true);
                     }
                 }
 
-                const res = await generateCouponsReport({
+                const res = await generateFeedbackReport({
                     columns: selectedColumns,
                     dateField,
                     startDate: start,
@@ -278,9 +246,9 @@ export default function CouponsReportPage() {
                 if (prev.length <= 1) return prev; // Keep at least one column
                 return prev.filter((k) => k !== colKey);
             } else {
+                // Keep the order matching metadata columns if possible
                 if (metadata?.columns) {
-                    const allPossible = Object.keys(metadata.columns);
-                    return allPossible.filter(
+                    return Object.keys(metadata.columns).filter(
                         (k) => k === colKey || prev.includes(k)
                     );
                 }
@@ -290,8 +258,8 @@ export default function CouponsReportPage() {
     };
 
     // Calculate avatar gradient and initials
-    const getInitials = (name?: string | null) => {
-        if (!name || name === "—") return "";
+    const getInitials = (name?: string) => {
+        if (!name) return "";
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -299,15 +267,15 @@ export default function CouponsReportPage() {
         return name.slice(0, 2).toUpperCase();
     };
 
-    const getAvatarStyle = (name?: string | null) => {
-        if (!name || name === "—") return "bg-zinc-800 text-zinc-400 border border-zinc-700/50";
+    const getAvatarStyle = (name?: string) => {
+        if (!name) return "bg-emerald-600/20 text-emerald-500";
         const colors = [
-            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald (matching Anne Jones AJ in image)
-            "bg-gradient-to-br from-[#f97316] to-[#ea580c] text-white", // Orange (matching Jayne Lewis JL, Howard Morgan HM in image)
-            "bg-gradient-to-br from-[#eab308] to-[#ca8a04] text-white", // Yellow
-            "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue (matching Amanda Jenkins AJ in image)
+            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald
+            "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue
             "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white", // Purple
-            "bg-gradient-to-br from-[#6b7280] to-[#4b5563] text-white", // Grey
+            "bg-gradient-to-br from-[#ec4899] to-[#db2777] text-white", // Pink
+            "bg-gradient-to-br from-[#06b6d4] to-[#0891b2] text-white", // Cyan
+            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
@@ -317,9 +285,9 @@ export default function CouponsReportPage() {
         return colors[index];
     };
 
-    // Date formatting helper: 31 Mar 2026
-    const formatDate = (dateStr?: string | null) => {
-        if (!dateStr) return "—";
+    // Date formatting helper: 22 Mar 2026
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return "-";
         try {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
@@ -340,16 +308,19 @@ export default function CouponsReportPage() {
     const handleExportCSV = () => {
         if (!reportData || !metadata) return;
 
-        const headers = selectedColumns.map((colKey) => getColInfo(colKey).label);
+        // Header Row
+        const headers = selectedColumns.map((colKey) => metadata.columns[colKey]?.label || colKey);
+        
+        // Data Rows
         const rows = reportData.data.map((row) =>
             selectedColumns.map((colKey) => {
                 let val = row[colKey];
                 if (val === undefined || val === null) return "";
-                if (typeof val === "boolean") {
-                    val = val ? "Yes" : "No";
-                } else if (metadata.dateColumns.includes(colKey)) {
+                // If it is a date column, format it
+                if (metadata.dateColumns.includes(colKey)) {
                     val = formatDate(String(val));
                 }
+                // Escape commas and double quotes
                 const stringVal = String(val).replace(/"/g, '""');
                 return `"${stringVal}"`;
             }).join(",")
@@ -360,7 +331,7 @@ export default function CouponsReportPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `coupons_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.setAttribute("download", `feedback_report_${new Date().toISOString().split("T")[0]}.csv`);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
@@ -391,20 +362,16 @@ export default function CouponsReportPage() {
         return pages;
     }, [page, totalPages]);
 
-    // Client-side filtered data
+    // Client-side filtered data (applied on top of server-paginated reportData)
     const displayData = useMemo(() => {
         if (!reportData || activeFilters.length === 0) return reportData;
         const filtered = reportData.data.filter(row =>
             activeFilters.every(f => {
-                let cellVal = row[f.column];
-                if (typeof cellVal === "boolean") {
-                    cellVal = cellVal ? "Yes" : "No";
-                }
-                const cellValStr = String(cellVal ?? "").toLowerCase().trim();
+                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
                 const filterVal = f.value.toLowerCase().trim();
-                if (f.operator === "equals") return cellValStr === filterVal;
-                if (f.operator === "contains") return cellValStr.includes(filterVal);
-                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellValStr === v);
+                if (f.operator === "equals") return cellVal === filterVal;
+                if (f.operator === "contains") return cellVal.includes(filterVal);
+                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
                 return true;
             })
         );
@@ -412,7 +379,8 @@ export default function CouponsReportPage() {
     }, [reportData, activeFilters]);
 
     return (
-        <div className="h-screen bg-[#0a0a0a] text-white flex overflow-hidden relative">
+        <div className="h-full bg-[#0a0a0a] text-white flex overflow-hidden">
+            {/* Print Specific CSS */}
             <style jsx global>{`
                 @media print {
                     html, body {
@@ -473,118 +441,6 @@ export default function CouponsReportPage() {
                 }
             `}</style>
 
-            {/* ── Sidebar ── */}
-            <aside
-                className={`no-print shrink-0 bg-[#111111] border-r border-[#232323] flex flex-col justify-between transition-all duration-300 ${sidebarCollapsed ? "w-[64px]" : "w-[240px]"
-                    }`}
-            >
-                <div>
-                    {/* Logo */}
-                    <div
-                        className={`h-[60px] flex items-center border-b border-[#232323] ${sidebarCollapsed ? "px-[18px]" : "px-[20px]"
-                            }`}
-                    >
-                        {sidebarCollapsed ? (
-                            <span className="text-[13px] font-black tracking-tight text-white">H</span>
-                        ) : (
-                            <h1 className="text-[14px] font-black tracking-tight text-white">HuemanAI</h1>
-                        )}
-                    </div>
-
-                    {/* Nav */}
-                    <nav className="px-3 pt-4 space-y-1">
-                        {[
-                            { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard" },
-                            { icon: <Phone size={16} />, label: "Calls", href: "/calls" },
-                            { icon: <ClipboardList size={16} />, label: "Actions", href: "/actions" },
-                            { icon: <TrendingUp size={16} />, label: "Insights", href: "/insights" },
-                            { icon: <PhoneCall size={16} />, label: "Outbound", href: "/outbound" },
-                            { icon: <FileBarChart2 size={16} />, label: "Reports", href: "/reports", active: true },
-                            { icon: <Sparkles size={16} />, label: "Netra AI", subLabel: "Coming Soon", purple: true },
-                            { icon: <Settings size={16} />, label: "Admin", href: "/admin" },
-                        ].map((item) => {
-                            const content = (
-                                <>
-                                    <span className={`shrink-0 ${item.purple ? "text-[#b158ff]" : ""}`}>
-                                        {item.icon}
-                                    </span>
-                                    {!sidebarCollapsed && (
-                                        <span className="leading-tight min-w-0">
-                                            <span className="block text-[11px] font-semibold truncate">{item.label}</span>
-                                            {item.subLabel && (
-                                                <span className="block text-[9px] font-medium text-zinc-500 mt-0.5">
-                                                    {item.subLabel}
-                                                </span>
-                                            )}
-                                        </span>
-                                    )}
-                                </>
-                            );
-
-                            const className = `w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
-                                } ${item.active
-                                    ? "bg-[#2a2a2a] text-white"
-                                    : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-200"
-                                }`;
-
-                            if (item.href) {
-                                return (
-                                    <Link
-                                        key={item.label}
-                                        href={item.href}
-                                        title={sidebarCollapsed ? item.label : undefined}
-                                        className={className}
-                                    >
-                                        {content}
-                                    </Link>
-                                );
-                            }
-
-                            return (
-                                <button
-                                    key={item.label}
-                                    title={sidebarCollapsed ? item.label : undefined}
-                                    className={className}
-                                    disabled={item.label === "Netra AI"}
-                                >
-                                    {content}
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
-
-                {/* Bottom */}
-                <div className={`pb-5 ${sidebarCollapsed ? "px-3" : "px-4"}`}>
-                    {!sidebarCollapsed && (
-                        <>
-                            <div className="flex items-center gap-3 mb-4 px-1">
-                                <div className="w-7 h-7 rounded-full bg-[#2a2a2a] flex items-center justify-center text-[10px] font-black shrink-0">
-                                    F
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-semibold text-[11px] leading-tight truncate">Fredrick</p>
-                                    <p className="text-[9px] text-zinc-500 truncate">fredrick@huemanai.co.uk</p>
-                                </div>
-                            </div>
-
-                            <button className="flex items-center gap-2 text-zinc-500 hover:text-zinc-200 text-[10px] transition-colors px-1 mb-5">
-                                <LogOut size={13} />
-                                Logout
-                            </button>
-                        </>
-                    )}
-
-                    <button
-                        onClick={() => setSidebarCollapsed((v) => !v)}
-                        className={`flex items-center justify-center w-7 h-7 rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] hover:bg-[#222] transition-colors text-zinc-500 hover:text-zinc-200 ${sidebarCollapsed ? "mx-auto" : "ml-auto"
-                            }`}
-                    >
-                        {sidebarCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-                    </button>
-                </div>
-            </aside>
-
             {/* ── Main Content Area ── */}
             <main className="flex-1 overflow-y-auto bg-[#0a0a0a] min-w-0 flex flex-col">
                 {/* ── Top Nav Header with Back Action & Print/Export Buttons ── */}
@@ -599,7 +455,7 @@ export default function CouponsReportPage() {
                         <div className="flex items-center text-[13px] font-semibold text-zinc-400 gap-1.5">
                             <Link href="/reports" className="hover:text-zinc-200 transition-colors">Reports</Link>
                             <span className="text-zinc-600 font-normal">&gt;</span>
-                            <span className="text-white font-bold">Coupons Reports</span>
+                            <span className="text-white font-bold">Feedback Reports</span>
                         </div>
                     </div>
 
@@ -613,7 +469,7 @@ export default function CouponsReportPage() {
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="h-[36px] px-4 rounded-[8px] bg-[#9333ea] hover:bg-[#7c3aed] text-white font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
+                            className="h-[36px] px-4 rounded-[8px] bg-[#10b981] hover:bg-[#059669] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
                         >
                             <Download size={13} />
                             Export CSV
@@ -623,12 +479,12 @@ export default function CouponsReportPage() {
 
                 {/* ── Split Layout Container ── */}
                 <div className="flex-1 flex overflow-hidden min-h-0">
-                    {/* ── Left Configuration Sidebar ── */}
+                    {/* ── Left Configuration Sidebar (Filter and Column Customizer) ── */}
                     <div className="no-print w-[300px] border-r border-[#161616] bg-[#0c0c0c] flex flex-col p-6 shrink-0 overflow-y-auto">
                         <h2 className="text-[14px] font-bold text-white mb-1">Configuration</h2>
                         <p className="text-zinc-500 text-[10px] mb-6">Customize columns, dates & filters</p>
 
-                        {/* DATE RANGE FILTER BOX (Using Purple theme) */}
+                        {/* DATE RANGE FILTER BOX */}
                         <DateRangeFilter
                             metadata={metadata}
                             dateField={dateField}
@@ -640,70 +496,78 @@ export default function CouponsReportPage() {
                             customEndDate={customEndDate}
                             setCustomEndDate={setCustomEndDate}
                             setPage={setPage}
-                            theme="purple"
-                            showDropdown={true}
+                            theme="emerald"
+                            showDropdown={false}
                         />
 
                         {/* COLUMN SELECTION TABS */}
                         <div className="flex-1 flex flex-col min-h-0">
+                            {/* Tab Switcher Headers */}
                             <div className="flex border-b border-[#161616] mb-4 shrink-0">
                                 <button
                                     onClick={() => setActiveTab("columns")}
-                                    className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${activeTab === "columns"
-                                            ? "border-[#b158ff] text-[#b158ff]"
+                                    className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${
+                                        activeTab === "columns"
+                                            ? "border-[#10b981] text-[#10b981]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
-                                        }`}
+                                    }`}
                                 >
                                     Columns
-                                    <span className="px-1.5 py-0.5 rounded-full bg-[#210d33] border border-[#b158ff]/20 text-[9px] text-[#b158ff] font-black">
+                                    <span className="px-1.5 py-0.5 rounded-full bg-[#0c2c1e] border border-[#10b981]/20 text-[9px] text-[#10b981] font-black">
                                         {selectedColumns.length}
                                     </span>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab("filters")}
-                                    className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${activeTab === "filters"
-                                            ? "border-[#b158ff] text-[#b158ff]"
+                                    className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${
+                                        activeTab === "filters"
+                                            ? "border-[#10b981] text-[#10b981]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
-                                        }`}
+                                    }`}
                                 >
                                     Filters
                                 </button>
                             </div>
 
+                            {/* Active Tab View */}
                             <div className="flex-1 overflow-y-auto pr-1">
                                 {activeTab === "columns" ? (
                                     <div className="space-y-1">
                                         {metadata &&
-                                            Object.keys(metadata.columns).map((colKey) => {
+                                            Object.entries(metadata.columns).map(([colKey, colInfo]) => {
                                                 const checked = selectedColumns.includes(colKey);
-                                                const colInfo = getColInfo(colKey);
                                                 return (
                                                     <div
                                                         key={colKey}
                                                         onClick={() => toggleColumn(colKey)}
-                                                        className={`w-full flex items-center justify-between p-2.5 rounded-[8px] cursor-pointer transition-colors ${checked
+                                                        className={`w-full flex items-center justify-between p-2.5 rounded-[8px] cursor-pointer transition-colors ${
+                                                            checked
                                                                 ? "bg-[#111] hover:bg-[#151515]"
                                                                 : "hover:bg-[#111]/50"
-                                                            }`}
+                                                        }`}
                                                     >
                                                         <div className="flex items-center gap-3">
+                                                            {/* Custom Circle Checkbox */}
                                                             <div
-                                                                className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${checked
-                                                                        ? "border-[#b158ff] bg-[#b158ff] text-black"
+                                                                className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${
+                                                                    checked
+                                                                        ? "border-[#10b981] bg-[#10b981] text-black"
                                                                         : "border-zinc-700 bg-transparent text-transparent"
-                                                                    }`}
+                                                                }`}
                                                             >
                                                                 {checked && <Check size={10} strokeWidth={4} />}
                                                             </div>
 
                                                             <span
-                                                                className={`text-[11px] font-semibold transition-all ${checked ? "text-zinc-100" : "text-zinc-400"
-                                                                    }`}
+                                                                className={`text-[11px] font-semibold transition-all ${
+                                                                    checked ? "text-zinc-100" : "text-zinc-400"
+                                                                }`}
                                                             >
                                                                 {colInfo.label}
                                                             </span>
                                                         </div>
 
+                                                        {/* Data Type Indicator Badge */}
                                                         <span className="text-[8px] font-black text-zinc-600 tracking-wider uppercase">
                                                             {colInfo.type}
                                                         </span>
@@ -713,23 +577,23 @@ export default function CouponsReportPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
-                                        {/* ADD FILTER Card */}
+                                        {/* ADD FILTER card */}
                                         <div className="rounded-[10px] border border-[#1e1e1e] bg-[#0f0f0f]">
-                                            <div className="border-l-2 border-[#b158ff] p-3 rounded-r-[9px] rounded-l-[8px]">
-                                                <p className="text-[9px] font-black tracking-widest text-[#b158ff] uppercase mb-3">Add Filter</p>
+                                            <div className="border-l-2 border-[#10b981] p-3 rounded-r-[9px] rounded-l-[8px]">
+                                                <p className="text-[9px] font-black tracking-widest text-[#10b981] uppercase mb-3">Add Filter</p>
 
-                                                {/* Column Selection */}
+                                                {/* Column selector custom dropdown */}
                                                 <div className="relative mb-2">
                                                     <button
+                                                        ref={columnBtnRef}
                                                         onClick={() => {
                                                             setColumnDropdownOpen(v => !v);
                                                             setOperatorDropdownOpen(false);
-                                                            setValueDropdownOpen(false);
                                                         }}
-                                                        className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] hover:border-[#333] transition-colors"
+                                                        className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-left transition-colors hover:border-[#333]"
                                                     >
                                                         <span className={pendingFilterColumn ? "text-white font-semibold" : "text-zinc-500"}>
-                                                            {pendingFilterColumn ? getColInfo(pendingFilterColumn).label : "Select Column"}
+                                                            {pendingFilterColumn ? (metadata?.columns[pendingFilterColumn]?.label || pendingFilterColumn) : "Select Column"}
                                                         </span>
                                                         <ChevronRight size={12} className={`text-zinc-500 transition-transform ${columnDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                     </button>
@@ -740,32 +604,32 @@ export default function CouponsReportPage() {
                                                             ref={columnDropdownRef}
                                                             className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-50 shadow-2xl max-h-[240px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
                                                         >
-                                                            {Object.keys(metadata.columns).map((colKey) => (
+                                                            {Object.entries(metadata.columns).map(([colKey, colInfo]) => (
                                                                 <button
                                                                     key={colKey}
                                                                     onClick={() => {
                                                                         setPendingFilterColumn(colKey);
                                                                         setColumnDropdownOpen(false);
                                                                     }}
-                                                                    className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${pendingFilterColumn === colKey ? "text-[#b158ff]" : "text-zinc-300"
-                                                                        }`}
+                                                                    className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
+                                                                        pendingFilterColumn === colKey ? "text-[#10b981]" : "text-zinc-300"
+                                                                    }`}
                                                                 >
-                                                                    {getColInfo(colKey).label}
+                                                                    {colInfo.label}
                                                                 </button>
                                                             ))}
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Operator & Value Field */}
+                                                {/* Operator + Value row */}
                                                 <div className="flex gap-2 mb-3">
-                                                    {/* Operator Selection */}
-                                                    <div className="relative shrink-0">
+                                                    {/* Operator custom dropdown */}
+                                                    <div className="relative shrink-0" ref={operatorDropdownRef}>
                                                         <button
                                                             onClick={() => {
                                                                 setOperatorDropdownOpen(v => !v);
                                                                 setColumnDropdownOpen(false);
-                                                                setValueDropdownOpen(false);
                                                             }}
                                                             className="flex items-center gap-1.5 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-zinc-300 font-semibold whitespace-nowrap hover:border-[#333] transition-colors"
                                                         >
@@ -773,10 +637,7 @@ export default function CouponsReportPage() {
                                                             <ChevronRight size={11} className={`text-zinc-500 transition-transform ${operatorDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                         </button>
                                                         {operatorDropdownOpen && (
-                                                            <div
-                                                                ref={operatorDropdownRef}
-                                                                className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100"
-                                                            >
+                                                            <div className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100">
                                                                 {[
                                                                     { id: "equals", label: "Equals" },
                                                                     { id: "contains", label: "Contains" },
@@ -790,7 +651,7 @@ export default function CouponsReportPage() {
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#b158ff]" : "text-transparent"}`}>✓</span>
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#10b981]" : "text-transparent"}`}>✓</span>
                                                                         {op.label}
                                                                     </button>
                                                                 ))}
@@ -798,53 +659,26 @@ export default function CouponsReportPage() {
                                                         )}
                                                     </div>
 
-                                                    {/* Value Input and Autocomplete Suggestions */}
-                                                    <div className="relative flex-1 min-w-0">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Value..."
-                                                            value={pendingFilterValue}
-                                                            onChange={e => {
-                                                                setPendingFilterValue(e.target.value);
-                                                                setValueDropdownOpen(true);
-                                                            }}
-                                                            onFocus={() => setValueDropdownOpen(true)}
-                                                            onKeyDown={e => {
-                                                                if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
-                                                                    setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
-                                                                    setPage(1);
-                                                                    setPendingFilterColumn("");
-                                                                    setPendingFilterValue("");
-                                                                    setPendingFilterOperator("equals");
-                                                                    setValueDropdownOpen(false);
-                                                                }
-                                                            }}
-                                                            className="w-full bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-[#b158ff]/50"
-                                                        />
-
-                                                        {valueDropdownOpen && filterSuggestions.length > 0 && (
-                                                            <div
-                                                                ref={valueDropdownRef}
-                                                                className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-[9999] shadow-2xl max-h-[160px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
-                                                            >
-                                                                {filterSuggestions.map((sug, idx) => (
-                                                                    <button
-                                                                        key={idx}
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            setPendingFilterValue(sug);
-                                                                            setValueDropdownOpen(false);
-                                                                        }}
-                                                                        className="w-full text-left px-4 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium border-b border-[#232323]/30 last:border-b-0"
-                                                                    >
-                                                                        {sug}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    {/* Value input */}
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Value..."
+                                                        value={pendingFilterValue}
+                                                        onChange={e => setPendingFilterValue(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
+                                                                setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
+                                                                setPage(1);
+                                                                setPendingFilterColumn("");
+                                                                setPendingFilterValue("");
+                                                                setPendingFilterOperator("equals");
+                                                            }
+                                                        }}
+                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-emerald-500/50"
+                                                    />
                                                 </div>
 
+                                                {/* Add Filter button */}
                                                 <button
                                                     onClick={() => {
                                                         if (!pendingFilterColumn || !pendingFilterValue.trim()) return;
@@ -857,31 +691,26 @@ export default function CouponsReportPage() {
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
                                                         setPendingFilterOperator("equals");
-                                                        setValueDropdownOpen(false);
-                                                     }}
+                                                    }}
                                                     disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
-                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#9333ea] to-[#7c3aed] hover:from-[#a855f7] hover:to-[#9333ea] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#047857] to-[#065f46] hover:from-[#059669] hover:to-[#047857] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
                                                 </button>
-                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: redeemed = false</p>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: review_type = public, rating_food &gt; 4</p>
                                             </div>
                                         </div>
 
-                                        {/* Filter Chips */}
+                                        {/* Active filters chips */}
                                         {activeFilters.length > 0 && (
                                             <div className="space-y-1.5">
                                                 {activeFilters.map((f, i) => (
                                                     <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
-                                                        <div className="flex flex-col min-w-0 text-[10px]">
-                                                            <span className="text-white font-bold">{getColInfo(f.column).label}</span>
-                                                            <div className="flex items-center gap-1.5 mt-1 text-[9px] font-black">
-                                                                <span className="px-1.5 py-0.5 rounded bg-[#1a1a1a] text-zinc-400">
-                                                                    {f.operator === "equals" ? "EQUALS" : f.operator === "contains" ? "LIKE" : "IN"}
-                                                                </span>
-                                                                <span className="text-[#b158ff] truncate max-w-[180px]">{f.value}</span>
-                                                            </div>
-                                                        </div>
+                                                        <span className="text-[10px] font-medium leading-tight">
+                                                            <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
+                                                            <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
+                                                            <span className="text-[#10b981]">{f.value}</span>
+                                                        </span>
                                                         <button
                                                             onClick={() => {
                                                                 setActiveFilters(prev => prev.filter((_, idx) => idx !== i));
@@ -910,8 +739,9 @@ export default function CouponsReportPage() {
                         </div>
                     </div>
 
-                    {/* ── Right Content Area: Table Preview ── */}
+                    {/* ── Right Content Area: Main Booking Report Preview Table ── */}
                     <div className="flex-1 flex flex-col p-[32px] overflow-y-auto min-h-0 bg-[#070707]">
+                        {/* Error Alert Box */}
                         {error && (
                             <div className="no-print p-4 bg-red-950/20 border border-red-800/30 rounded-[12px] mb-6 flex items-start gap-3">
                                 <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
@@ -922,23 +752,24 @@ export default function CouponsReportPage() {
                             </div>
                         )}
 
+                        {/* Report Container Box */}
                         <div className="flex-1 flex flex-col border border-[#161616] rounded-[12px] bg-[#0f0f0f] overflow-hidden min-h-0">
-                            {/* Table Header toolbar */}
+                            {/* Table Header Filter / Title / Search Controls */}
                             <div className="no-print p-6 border-b border-[#161616] flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#9333ea]/10 border border-[#9333ea]/20 flex items-center justify-center text-[#b158ff]">
-                                        <Ticket size={18} />
+                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center text-[#10b981]">
+                                        <MessageSquare size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-[14px] font-bold text-white">Coupon Report Preview</h3>
-                                        <p className="text-[#b158ff] text-[10px] font-bold mt-0.5">
+                                        <h3 className="text-[14px] font-bold text-white">Feedback Report Preview</h3>
+                                        <p className="text-[#10b981] text-[10px] font-bold mt-0.5">
                                             {loading && !reportData ? (
                                                 <span className="flex items-center gap-1.5">
                                                     <Loader2 className="animate-spin" size={10} />
                                                     Checking database...
                                                 </span>
                                             ) : (
-                                                `${reportData?.total || 0} coupons found`
+                                                `${reportData?.total || 0} responses found`
                                             )}
                                         </p>
                                     </div>
@@ -950,32 +781,33 @@ export default function CouponsReportPage() {
                                         placeholder="Search results..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-[#b158ff]/50"
+                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-emerald-500/50"
                                     />
                                     <Search size={12} className="absolute left-3 top-3.5 text-zinc-500" />
                                 </div>
                             </div>
 
-                            {/* Responsive Table Container */}
+                            {/* Responsive Table Scroll Container */}
                             <div className="flex-1 overflow-auto min-h-0 relative">
                                 {loading && (
                                     <div className="no-print absolute inset-0 bg-[#0f0f0f]/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-[#b158ff]" size={32} />
+                                            <Loader2 className="animate-spin text-[#10b981]" size={32} />
                                             <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Syncing records...</span>
                                         </div>
                                     </div>
                                 )}
 
                                 <table className="w-full border-collapse text-left">
-                                    <thead className="bg-[#1c0d2b] border-b border-[#b158ff]/10 sticky top-0 z-1">
+                                    {/* Warm Deep Green Header matching custom preview design */}
+                                    <thead className="bg-[#062419] border-b border-[#10b981]/10 sticky top-0 z-1">
                                         <tr>
                                             {selectedColumns.map((colKey) => (
                                                 <th
                                                     key={colKey}
-                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#2d1245]"
+                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#082a1e]"
                                                 >
-                                                    {getColInfo(colKey).label}
+                                                    {metadata?.columns[colKey]?.label || colKey}
                                                 </th>
                                             ))}
                                         </tr>
@@ -991,50 +823,45 @@ export default function CouponsReportPage() {
                                                         const val = row[colKey];
                                                         const isDate = metadata?.dateColumns?.includes(colKey);
 
-                                                        // Customer name avatar formatting
+                                                        // Customer name column gets initials avatar bubble
                                                         if (colKey === "customer_name") {
-                                                            const nameStr = val ? String(val) : "—";
+                                                            const nameStr = String(val || "-");
                                                             return (
                                                                 <td key={colKey} className="px-6 py-4 border-b border-[#161616]">
                                                                     <div className="flex items-center gap-3">
                                                                         <div
                                                                             className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${getAvatarStyle(
-                                                                                val
+                                                                                nameStr
                                                                             )}`}
                                                                         >
-                                                                            {getInitials(val)}
+                                                                            {getInitials(nameStr)}
                                                                         </div>
-                                                                        <span className="font-semibold text-white">{nameStr}</span>
+                                                                        <span className="font-bold text-white">{nameStr}</span>
                                                                     </div>
                                                                 </td>
                                                             );
                                                         }
 
-                                                        // Bold codes
-                                                        if (colKey === "coupon_code" || colKey === "reference_no") {
+                                                        // Display comments or custom dashes
+                                                        if (colKey === "comments") {
+                                                            const commentText = String(val || "").trim();
                                                             return (
-                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-white font-bold uppercase tracking-wider">
-                                                                    {String(val || "—")}
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold max-w-[280px] break-words whitespace-pre-line leading-relaxed">
+                                                                    {commentText ? commentText : "—"}
                                                                 </td>
                                                             );
                                                         }
 
-                                                        // Boolean redeemed rendering
-                                                        if (colKey === "redeemed") {
-                                                            return (
-                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold">
-                                                                    {val === true ? "Yes" : "No"}
-                                                                </td>
-                                                            );
-                                                        }
-
-                                                        // Default Date and String rendering
+                                                        // Check if rating column
+                                                        const isRating = colKey.startsWith("rating_");
                                                         return (
                                                             <td
                                                                 key={colKey}
-                                                                className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold"
+                                                                className={`px-6 py-4 border-b border-[#161616] ${
+                                                                    isRating ? "font-bold text-zinc-100" : "text-zinc-300 font-semibold"
+                                                                }`}
                                                             >
-                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null || val === "" ? "—" : val)}
+                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null ? "-" : val)}
                                                             </td>
                                                         );
                                                     })}
@@ -1046,7 +873,7 @@ export default function CouponsReportPage() {
                                                     colSpan={selectedColumns.length || 1}
                                                     className="px-6 py-12 text-center text-zinc-500 font-medium italic"
                                                 >
-                                                    {!loading && "No matching coupons found."}
+                                                    {!loading && "No matching feedback found."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1054,7 +881,7 @@ export default function CouponsReportPage() {
                                 </table>
                             </div>
 
-                            {/* Pagination and Rows Count Selector Footer */}
+                            {/* Pagination and Rows Count Footer */}
                             {reportData && (
                                 <div className="no-print px-6 py-4 border-t border-[#161616] bg-[#0c0c0c] flex items-center justify-between shrink-0 pagination-footer text-[10px] text-zinc-400 font-bold select-none">
                                     <div>
@@ -1066,9 +893,10 @@ export default function CouponsReportPage() {
                                         <span className="text-white">
                                             {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
-                                        of <span className="text-[#b158ff] font-black">{reportData.total}</span> results
+                                        of <span className="text-[#10b981] font-black">{reportData.total}</span> results
                                     </div>
 
+                                    {/* Rows Count Page Selector */}
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-zinc-500 uppercase text-[9px]">Rows:</span>
@@ -1079,17 +907,18 @@ export default function CouponsReportPage() {
                                                         setPageSize(size);
                                                         setPage(1);
                                                     }}
-                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${pageSize === size
-                                                            ? "bg-[#b158ff] text-black"
+                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${
+                                                        pageSize === size
+                                                            ? "bg-[#10b981] text-black"
                                                             : "bg-[#161616] text-zinc-400 hover:text-zinc-200 border border-[#232323]"
-                                                        }`}
+                                                    }`}
                                                 >
                                                     {size}
                                                 </button>
                                             ))}
                                         </div>
 
-                                        {/* Pagination Controls */}
+                                        {/* Pagination Button Navigation */}
                                         <div className="flex items-center gap-1">
                                             <button
                                                 disabled={page <= 1}
@@ -1108,12 +937,13 @@ export default function CouponsReportPage() {
                                                         key={index}
                                                         disabled={isDots}
                                                         onClick={() => !isDots && setPage(Number(pNum))}
-                                                        className={`w-6 h-6 rounded flex items-center justify-center transition-all ${active
-                                                                ? "bg-[#b158ff] text-black font-extrabold"
+                                                        className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
+                                                            active
+                                                                ? "bg-[#10b981] text-black font-extrabold"
                                                                 : isDots
-                                                                    ? "text-zinc-600 bg-transparent font-normal cursor-default"
-                                                                    : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
-                                                            }`}
+                                                                ? "text-zinc-600 bg-transparent font-normal cursor-default"
+                                                                : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
+                                                        }`}
                                                     >
                                                         {pNum}
                                                     </button>
