@@ -10,7 +10,7 @@ export default function HomeHeader() {
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-black">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-10">
-        <Image src="/logo.png" alt="HuëmanAI" width={280} height={80} className="h-16 w-auto object-contain" />
+        <Image src="/logo.png" alt="HuëmanAI" width={420} height={120} className="h-24 w-auto object-contain" />
 
         {isAuthenticated && user ? (
           <div className="flex items-center gap-14 text-base">

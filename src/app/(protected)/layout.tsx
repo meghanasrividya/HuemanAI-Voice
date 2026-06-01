@@ -56,7 +56,7 @@ export default function ProtectedLayout({ children }: Props) {
                 <aside className="hidden w-64 shrink-0 border-r border-border bg-card lg:flex lg:flex-col">
                     {/* Brand */}
                     <div className="px-5 py-5">
-                        <span className="text-[54px] font-bold tracking-tight leading-none">HuemanAI</span>
+                        <span className="text-xl font-bold tracking-tight">HuemanAI</span>
                     </div>
 
                     {/* Nav */}
