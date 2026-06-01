@@ -16,6 +16,14 @@ export function parseTimestampAsUtc(
         return value;
     }
 
+    if (typeof value === "string") {
+        let cleanValue = value.trim();
+        if (!cleanValue.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(cleanValue)) {
+            cleanValue = cleanValue.replace(" ", "T") + "Z";
+        }
+        return new Date(cleanValue);
+    }
+
     return new Date(value);
 }
 
@@ -26,7 +34,7 @@ export function formatDateInTimezone(
 ) {
     const date =
         typeof value === "string"
-            ? new Date(value)
+            ? parseTimestampAsUtc(value)
             : value;
 
     return new Intl.DateTimeFormat(
@@ -46,7 +54,7 @@ export function formatDateTime(
 
     const date =
         typeof value === "string"
-            ? new Date(value)
+            ? parseTimestampAsUtc(value)
             : value;
 
     return formatInTimeZone(
@@ -64,7 +72,7 @@ export function formatShortDate(
 
     const date =
         typeof value === "string"
-            ? new Date(value)
+            ? parseTimestampAsUtc(value)
             : value;
 
     return formatInTimeZone(
@@ -82,7 +90,7 @@ export function formatShortTime(
 
     const date =
         typeof value === "string"
-            ? new Date(value)
+            ? parseTimestampAsUtc(value)
             : value;
 
     return formatInTimeZone(

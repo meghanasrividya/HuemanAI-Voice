@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bell, BellOff, AlertTriangle, Loader2 } from "lucide-react";
@@ -12,14 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { formatDateInTimezone, parseTimestampAsUtc, DEFAULT_DISPLAY_TIMEZONE, getDateKeyInTimezone } from "@/lib/date/dateUtils";
-import { ACTION_STATUS_LABELS, ACTION_REQUEST_TYPE_LABELS } from "@/lib/actions/constants";
+import { ACTION_STATUS_LABELS, ACTION_REQUEST_TYPE_LABELS, DIALOG_REQUEST_TYPE_OPTIONS } from "@/lib/actions/constants";
 import { useActionsList, useActionStats, useUpdateAction, useCreateAction, useActionHotels } from "@/hooks/useActions";
-import { actionsApi } from "@/lib/api/actions";
+import { actionsApi, decryptPhoneNumber } from "@/lib/api/actions";
 import { PaginationControls } from "@/components/ui/pagination";
 import { ActionStatusBadge, ActionPriorityBadge } from "@/components/actions/ActionBadges";
 import toast from "react-hot-toast";
@@ -113,11 +113,12 @@ function CreateActionDialog() {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+        <>
+            <Button size="sm" className="gap-2 rounded-full px-4 h-9 font-semibold" onClick={() => setOpen(true)}>
                 <Plus className="h-4 w-4" /> New Action
             </Button>
-            <DialogContent className="sm:max-w-[500px]">
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Create New Action</DialogTitle>
                     <DialogDescription>Manually create an action item for team follow-up.</DialogDescription>
@@ -128,7 +129,7 @@ function CreateActionDialog() {
                         <Select value={type} onValueChange={setType}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {Object.entries(ACTION_REQUEST_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v as string}</SelectItem>)}
+                                {DIALOG_REQUEST_TYPE_OPTIONS.map(({ key, label }) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -163,7 +164,8 @@ function CreateActionDialog() {
                     </Button>
                 </DialogFooter>
             </DialogContent>
-        </Dialog>
+            </Dialog>
+        </>
     );
 }
 
@@ -175,6 +177,48 @@ export default function ActionsPageContent() {
     const { user } = useAuthStore();
 
     const [page, setPage] = useState(() => Number(searchParams.get("page")) || 1);
+    const [decryptedPhones, setDecryptedPhones] = useState<Record<number, string>>({});
+    const [showNotificationBanner, setShowNotificationBanner] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && "Notification" in window) {
+            const optedOut = localStorage.getItem(PUSH_OPT_OUT_KEY) === "true";
+            if (Notification.permission === "default" && !optedOut) {
+                setShowNotificationBanner(true);
+            }
+        }
+    }, []);
+
+    const handleEnableNotifications = async () => {
+        if (typeof window !== "undefined" && "Notification" in window) {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    toast.success("Notifications enabled successfully!");
+                    localStorage.setItem(PUSH_OPT_OUT_KEY, "false");
+                    setShowNotificationBanner(false);
+                } else {
+                    toast.error("Notification permission denied.");
+                    localStorage.setItem(PUSH_OPT_OUT_KEY, "true");
+                    setShowNotificationBanner(false);
+                }
+            } catch (err) {
+                console.error("Error requesting notification permission", err);
+            }
+        }
+    };
+
+    const handleDecrypt = async (e: React.MouseEvent, actionId: number) => {
+        e.stopPropagation();
+        try {
+            const res = await decryptPhoneNumber(actionId.toString());
+            if (res && res.decryptedNumber) {
+                setDecryptedPhones(prev => ({ ...prev, [actionId]: res.decryptedNumber }));
+            }
+        } catch (err) {
+            toast.error("Failed to decrypt phone number");
+        }
+    };
     const [search, setSearch] = useState(() => searchParams.get("search") || "");
     const [debouncedSearch, setDebouncedSearch] = useState(search);
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -215,7 +259,7 @@ export default function ActionsPageContent() {
     };
 
     return (
-        <div className="flex flex-col min-h-dvh p-4 md:p-6 space-y-4">
+        <div className="flex flex-col h-screen max-h-screen p-4 md:p-6 space-y-4 overflow-hidden">
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -224,10 +268,29 @@ export default function ActionsPageContent() {
                 </div>
                 <div className="flex items-center gap-2">
                     {isFetching && !isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />}
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>Refresh</Button>
+                    <Button variant="outline" size="sm" className="rounded-full px-4 h-9 font-semibold" onClick={() => refetch()}>Refresh</Button>
                     <CreateActionDialog />
                 </div>
             </div>
+
+            {/* Notification Banner */}
+            {showNotificationBanner && (
+                <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-[#0d0d0f]/90 backdrop-blur-sm shadow-premium-sm animate-in fade-in duration-300">
+                    <div className="flex items-center gap-3">
+                        <Bell className="h-4 w-4 text-zinc-400 shrink-0" />
+                        <span className="text-xs sm:text-sm text-zinc-300">
+                            Enable notifications for new actions, overdue items, and repeat callers.
+                        </span>
+                    </div>
+                    <Button
+                        size="sm"
+                        className="rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 px-4 h-9 text-xs font-semibold"
+                        onClick={handleEnableNotifications}
+                    >
+                        Enable
+                    </Button>
+                </div>
+            )}
 
             {/* Stats */}
             <StatsRow data={stats} isLoading={statsLoading} />
@@ -249,7 +312,9 @@ export default function ActionsPageContent() {
                     <SelectTrigger className="h-10 sm:w-[140px]"><SelectValue placeholder="All Types" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        {Object.keys(ACTION_REQUEST_TYPE_LABELS).map(k => <SelectItem key={k} value={k}>{(ACTION_REQUEST_TYPE_LABELS as any)[k]}</SelectItem>)}
+                        {DIALOG_REQUEST_TYPE_OPTIONS.map(({ key, label }) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
                 <Select value={priority || "all"} onValueChange={(v: string) => { setPriority(v === "all" ? "" : v); setPage(1); }}>
@@ -297,8 +362,8 @@ export default function ActionsPageContent() {
 
             {!isLoading && actions && actions.data.length > 0 && (
                 <>
-                    <div className="flex flex-col rounded-xl border border-border bg-card shadow-premium-sm">
-                        <div className="overflow-auto">
+                    <div className="flex flex-col rounded-xl border border-border bg-card shadow-premium-sm overflow-hidden flex-1 min-h-0">
+                        <div className="overflow-auto flex-1 min-h-0">
                             <table className="w-full">
                                 <thead className="border-b border-border bg-secondary/30 sticky top-0 z-10">
                                     <tr>
@@ -321,10 +386,26 @@ export default function ActionsPageContent() {
                                             <td className="px-4 py-4">
                                                 <p className="text-sm font-medium">{action.guest_name || "Unknown"}</p>
                                                 {action.follow_up_count > 0 && (
-                                                    <span className="text-[10px] uppercase text-orange-500 font-bold tracking-wide">Repeat x{action.follow_up_count + 1}</span>
+                                                    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase text-orange-500 font-bold tracking-wide mt-0.5">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                                                        Repeat x{action.follow_up_count + 1}
+                                                    </span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-muted-foreground font-mono">{action.phone_number || "N/A"}</td>
+                                            <td className="px-4 py-4 text-sm text-muted-foreground font-mono" onClick={e => e.stopPropagation()}>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>{decryptedPhones[action.id] || action.phone_number || "N/A"}</span>
+                                                    {action.phone_number && !decryptedPhones[action.id] && (
+                                                        <button
+                                                            onClick={(e) => handleDecrypt(e, action.id)}
+                                                            className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 cursor-pointer"
+                                                            title="Decrypt phone number"
+                                                        >
+                                                            <Eye className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-4">
                                                 <Badge variant="outline" className="text-xs">{(ACTION_REQUEST_TYPE_LABELS as any)[action.request_type] || action.request_type_label}</Badge>
                                             </td>
@@ -332,7 +413,7 @@ export default function ActionsPageContent() {
                                             <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <button className="outline-none"><ActionStatusBadge status={action.status} showChevron /></button>
+                                                        <button className="outline-none cursor-pointer"><ActionStatusBadge status={action.status} showChevron /></button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="start" className="w-[180px]">
                                                         {Object.keys(ACTION_STATUS_LABELS).map(s => (
