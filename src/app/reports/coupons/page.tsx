@@ -22,19 +22,18 @@ import {
     ArrowLeft,
     AlertCircle,
     Loader2,
-    BedDouble,
+    Ticket,
 } from "lucide-react";
 import {
-    fetchBookingsMetadata,
-    generateBookingsReport,
+    fetchCouponsMetadata,
+    generateCouponsReport,
     ReportMetadata,
-    ReportDataResponse,
-    BookingReservation,
+    CouponsReportDataResponse as ReportDataResponse,
+    CouponResponseItem as BookingReservation,
 } from "../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
-
-export default function BookingsReportPage() {
+export default function CouponsReportPage() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
     const [reportData, setReportData] = useState<ReportDataResponse | null>(null);
@@ -43,9 +42,9 @@ export default function BookingsReportPage() {
 
     // Filter and Pagination States
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-    const [dateField, setDateField] = useState<string>("visit_date");
+    const [dateField, setDateField] = useState<string>("valid_from");
     const [dateRangeType, setDateRangeType] = useState<"7days" | "30days" | "month" | "custom" | null>(null);
-    
+
     // Default custom date range: past 30 days
     const [customStartDate, setCustomStartDate] = useState<string>(() => {
         const d = new Date();
@@ -69,11 +68,13 @@ export default function BookingsReportPage() {
     const [activeFilters, setActiveFilters] = useState<Array<{ column: string; operator: string; value: string }>>([]);
     const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
     const [operatorDropdownOpen, setOperatorDropdownOpen] = useState(false);
+    const [valueDropdownOpen, setValueDropdownOpen] = useState(false);
 
     // Refs for click-outside on custom dropdowns
     const columnDropdownRef = useRef<HTMLDivElement>(null);
     const columnBtnRef = useRef<HTMLButtonElement>(null);
     const operatorDropdownRef = useRef<HTMLDivElement>(null);
+    const valueDropdownRef = useRef<HTMLDivElement>(null);
     const [colDropPos, setColDropPos] = useState({ bottom: 0, left: 0, width: 0 });
 
     // Close dropdowns on outside click
@@ -85,6 +86,9 @@ export default function BookingsReportPage() {
             if (!inColDropdown && !inColBtn) setColumnDropdownOpen(false);
             if (operatorDropdownRef.current && !operatorDropdownRef.current.contains(target)) {
                 setOperatorDropdownOpen(false);
+            }
+            if (valueDropdownRef.current && !valueDropdownRef.current.contains(target)) {
+                setValueDropdownOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -100,12 +104,29 @@ export default function BookingsReportPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
+    // Helper to get columns metadata
+    const getColInfo = (colKey: string) => {
+        return metadata?.columns[colKey] || { label: colKey, type: "UNKNOWN" };
+    };
+
+    // Filter value suggestions
+    const filterSuggestions = useMemo(() => {
+        if (!pendingFilterColumn || !pendingFilterValue || !reportData) return [];
+        const valLower = pendingFilterValue.toLowerCase();
+        const uniqueVals = Array.from(
+            new Set(reportData.data.map((row) => String(row[pendingFilterColumn] ?? "")))
+        );
+        return uniqueVals
+            .filter((val) => val && val.toLowerCase().includes(valLower) && val.toLowerCase() !== valLower)
+            .slice(0, 5);
+    }, [pendingFilterColumn, pendingFilterValue, reportData]);
+
     // 1. Fetch Metadata on Mount
     useEffect(() => {
         const loadMetadata = async () => {
             try {
                 setLoading(true);
-                const data = await fetchBookingsMetadata();
+                const data = await fetchCouponsMetadata();
                 setMetadata(data);
                 setSelectedColumns(data.defaultColumns || []);
                 if (data.dateColumns && data.dateColumns.length > 0) {
@@ -208,23 +229,21 @@ export default function BookingsReportPage() {
                 else if (dateRangeType === "custom") {
                     if (customStartDate) {
                         const [y, m, d] = customStartDate.split("-").map(Number);
-
                         start = createUTCDate(y, m - 1, d);
                     }
 
                     if (customEndDate) {
                         const [y, m, d] = customEndDate.split("-").map(Number);
-
                         end = createUTCDate(y, m - 1, d, true);
                     }
                 }
 
-                const res = await generateBookingsReport({
+                const res = await generateCouponsReport({
                     columns: selectedColumns,
                     dateField,
-                    startDate: start || undefined,
-                    endDate: end || undefined,
-                    search: debouncedSearch || undefined,
+                    startDate: start,
+                    endDate: end,
+                    search: debouncedSearch,
                     page,
                     pageSize,
                     filters: activeFilters,
@@ -259,9 +278,9 @@ export default function BookingsReportPage() {
                 if (prev.length <= 1) return prev; // Keep at least one column
                 return prev.filter((k) => k !== colKey);
             } else {
-                // Keep the order matching metadata columns if possible
                 if (metadata?.columns) {
-                    return Object.keys(metadata.columns).filter(
+                    const allPossible = Object.keys(metadata.columns);
+                    return allPossible.filter(
                         (k) => k === colKey || prev.includes(k)
                     );
                 }
@@ -271,8 +290,8 @@ export default function BookingsReportPage() {
     };
 
     // Calculate avatar gradient and initials
-    const getInitials = (name?: string) => {
-        if (!name) return "";
+    const getInitials = (name?: string | null) => {
+        if (!name || name === "—") return "";
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -280,15 +299,15 @@ export default function BookingsReportPage() {
         return name.slice(0, 2).toUpperCase();
     };
 
-    const getAvatarStyle = (name?: string) => {
-        if (!name) return "bg-amber-600/20 text-amber-500";
+    const getAvatarStyle = (name?: string | null) => {
+        if (!name || name === "—") return "bg-zinc-800 text-zinc-400 border border-zinc-700/50";
         const colors = [
-            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
-            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald
-            "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue
+            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald (matching Anne Jones AJ in image)
+            "bg-gradient-to-br from-[#f97316] to-[#ea580c] text-white", // Orange (matching Jayne Lewis JL, Howard Morgan HM in image)
+            "bg-gradient-to-br from-[#eab308] to-[#ca8a04] text-white", // Yellow
+            "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue (matching Amanda Jenkins AJ in image)
             "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white", // Purple
-            "bg-gradient-to-br from-[#ec4899] to-[#db2777] text-white", // Pink
-            "bg-gradient-to-br from-[#06b6d4] to-[#0891b2] text-white", // Cyan
+            "bg-gradient-to-br from-[#6b7280] to-[#4b5563] text-white", // Grey
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
@@ -298,9 +317,9 @@ export default function BookingsReportPage() {
         return colors[index];
     };
 
-    // Date formatting helper: 22 Mar 2026
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return "-";
+    // Date formatting helper: 31 Mar 2026
+    const formatDate = (dateStr?: string | null) => {
+        if (!dateStr) return "—";
         try {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
@@ -321,19 +340,16 @@ export default function BookingsReportPage() {
     const handleExportCSV = () => {
         if (!reportData || !metadata) return;
 
-        // Header Row
-        const headers = selectedColumns.map((colKey) => metadata.columns[colKey]?.label || colKey);
-        
-        // Data Rows
+        const headers = selectedColumns.map((colKey) => getColInfo(colKey).label);
         const rows = reportData.data.map((row) =>
             selectedColumns.map((colKey) => {
                 let val = row[colKey];
                 if (val === undefined || val === null) return "";
-                // If it is a date column, format it
-                if (metadata.dateColumns.includes(colKey)) {
+                if (typeof val === "boolean") {
+                    val = val ? "Yes" : "No";
+                } else if (metadata.dateColumns.includes(colKey)) {
                     val = formatDate(String(val));
                 }
-                // Escape commas and double quotes
                 const stringVal = String(val).replace(/"/g, '""');
                 return `"${stringVal}"`;
             }).join(",")
@@ -344,7 +360,7 @@ export default function BookingsReportPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `bookings_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.setAttribute("download", `coupons_report_${new Date().toISOString().split("T")[0]}.csv`);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
@@ -375,16 +391,20 @@ export default function BookingsReportPage() {
         return pages;
     }, [page, totalPages]);
 
-    // Client-side filtered data (applied on top of server-paginated reportData)
+    // Client-side filtered data
     const displayData = useMemo(() => {
         if (!reportData || activeFilters.length === 0) return reportData;
         const filtered = reportData.data.filter(row =>
             activeFilters.every(f => {
-                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
+                let cellVal = row[f.column];
+                if (typeof cellVal === "boolean") {
+                    cellVal = cellVal ? "Yes" : "No";
+                }
+                const cellValStr = String(cellVal ?? "").toLowerCase().trim();
                 const filterVal = f.value.toLowerCase().trim();
-                if (f.operator === "equals") return cellVal === filterVal;
-                if (f.operator === "contains") return cellVal.includes(filterVal);
-                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
+                if (f.operator === "equals") return cellValStr === filterVal;
+                if (f.operator === "contains") return cellValStr.includes(filterVal);
+                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellValStr === v);
                 return true;
             })
         );
@@ -393,7 +413,6 @@ export default function BookingsReportPage() {
 
     return (
         <div className="h-screen bg-[#0a0a0a] text-white flex overflow-hidden relative">
-            {/* Print Specific CSS */}
             <style jsx global>{`
                 @media print {
                     html, body {
@@ -456,16 +475,14 @@ export default function BookingsReportPage() {
 
             {/* ── Sidebar ── */}
             <aside
-                className={`no-print shrink-0 bg-[#111111] border-r border-[#232323] flex flex-col justify-between transition-all duration-300 ${
-                    sidebarCollapsed ? "w-[64px]" : "w-[240px]"
-                }`}
+                className={`no-print shrink-0 bg-[#111111] border-r border-[#232323] flex flex-col justify-between transition-all duration-300 ${sidebarCollapsed ? "w-[64px]" : "w-[240px]"
+                    }`}
             >
-                {/* Logo */}
                 <div>
+                    {/* Logo */}
                     <div
-                        className={`h-[60px] flex items-center border-b border-[#232323] ${
-                            sidebarCollapsed ? "px-[18px]" : "px-[20px]"
-                        }`}
+                        className={`h-[60px] flex items-center border-b border-[#232323] ${sidebarCollapsed ? "px-[18px]" : "px-[20px]"
+                            }`}
                     >
                         {sidebarCollapsed ? (
                             <span className="text-[13px] font-black tracking-tight text-white">H</span>
@@ -504,13 +521,11 @@ export default function BookingsReportPage() {
                                 </>
                             );
 
-                            const className = `w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${
-                                sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
-                            } ${
-                                item.active
+                            const className = `w-full flex items-center gap-3 rounded-[8px] transition-colors text-left ${sidebarCollapsed ? "h-[40px] px-[12px] justify-center" : "h-[44px] px-[12px]"
+                                } ${item.active
                                     ? "bg-[#2a2a2a] text-white"
                                     : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-200"
-                            }`;
+                                }`;
 
                             if (item.href) {
                                 return (
@@ -560,12 +575,10 @@ export default function BookingsReportPage() {
                         </>
                     )}
 
-                    {/* Collapse toggle */}
                     <button
                         onClick={() => setSidebarCollapsed((v) => !v)}
-                        className={`flex items-center justify-center w-7 h-7 rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] hover:bg-[#222] transition-colors text-zinc-500 hover:text-zinc-200 ${
-                            sidebarCollapsed ? "mx-auto" : "ml-auto"
-                        }`}
+                        className={`flex items-center justify-center w-7 h-7 rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] hover:bg-[#222] transition-colors text-zinc-500 hover:text-zinc-200 ${sidebarCollapsed ? "mx-auto" : "ml-auto"
+                            }`}
                     >
                         {sidebarCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
                     </button>
@@ -586,7 +599,7 @@ export default function BookingsReportPage() {
                         <div className="flex items-center text-[13px] font-semibold text-zinc-400 gap-1.5">
                             <Link href="/reports" className="hover:text-zinc-200 transition-colors">Reports</Link>
                             <span className="text-zinc-600 font-normal">&gt;</span>
-                            <span className="text-white font-bold">Bookings Reports</span>
+                            <span className="text-white font-bold">Coupons Reports</span>
                         </div>
                     </div>
 
@@ -600,7 +613,7 @@ export default function BookingsReportPage() {
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="h-[36px] px-4 rounded-[8px] bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
+                            className="h-[36px] px-4 rounded-[8px] bg-[#9333ea] hover:bg-[#7c3aed] text-white font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
                         >
                             <Download size={13} />
                             Export CSV
@@ -610,12 +623,12 @@ export default function BookingsReportPage() {
 
                 {/* ── Split Layout Container ── */}
                 <div className="flex-1 flex overflow-hidden min-h-0">
-                    {/* ── Left Configuration Sidebar (Filter and Column Customizer) ── */}
+                    {/* ── Left Configuration Sidebar ── */}
                     <div className="no-print w-[300px] border-r border-[#161616] bg-[#0c0c0c] flex flex-col p-6 shrink-0 overflow-y-auto">
                         <h2 className="text-[14px] font-bold text-white mb-1">Configuration</h2>
                         <p className="text-zinc-500 text-[10px] mb-6">Customize columns, dates & filters</p>
 
-                        {/* DATE RANGE FILTER BOX */}
+                        {/* DATE RANGE FILTER BOX (Using Purple theme) */}
                         <DateRangeFilter
                             metadata={metadata}
                             dateField={dateField}
@@ -627,78 +640,70 @@ export default function BookingsReportPage() {
                             customEndDate={customEndDate}
                             setCustomEndDate={setCustomEndDate}
                             setPage={setPage}
-                            theme="amber"
+                            theme="purple"
                             showDropdown={true}
                         />
 
                         {/* COLUMN SELECTION TABS */}
                         <div className="flex-1 flex flex-col min-h-0">
-                            {/* Tab Switcher Headers */}
                             <div className="flex border-b border-[#161616] mb-4 shrink-0">
                                 <button
                                     onClick={() => setActiveTab("columns")}
-                                    className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${
-                                        activeTab === "columns"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                    className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${activeTab === "columns"
+                                            ? "border-[#b158ff] text-[#b158ff]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
-                                    }`}
+                                        }`}
                                 >
                                     Columns
-                                    <span className="px-1.5 py-0.5 rounded-full bg-[#251b14] border border-[#f59e0b]/20 text-[9px] text-[#f59e0b] font-black">
+                                    <span className="px-1.5 py-0.5 rounded-full bg-[#210d33] border border-[#b158ff]/20 text-[9px] text-[#b158ff] font-black">
                                         {selectedColumns.length}
                                     </span>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab("filters")}
-                                    className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${
-                                        activeTab === "filters"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                    className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${activeTab === "filters"
+                                            ? "border-[#b158ff] text-[#b158ff]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
-                                    }`}
+                                        }`}
                                 >
                                     Filters
                                 </button>
                             </div>
 
-                            {/* Active Tab View */}
                             <div className="flex-1 overflow-y-auto pr-1">
                                 {activeTab === "columns" ? (
                                     <div className="space-y-1">
                                         {metadata &&
-                                            Object.entries(metadata.columns).map(([colKey, colInfo]) => {
+                                            Object.keys(metadata.columns).map((colKey) => {
                                                 const checked = selectedColumns.includes(colKey);
+                                                const colInfo = getColInfo(colKey);
                                                 return (
                                                     <div
                                                         key={colKey}
                                                         onClick={() => toggleColumn(colKey)}
-                                                        className={`w-full flex items-center justify-between p-2.5 rounded-[8px] cursor-pointer transition-colors ${
-                                                            checked
+                                                        className={`w-full flex items-center justify-between p-2.5 rounded-[8px] cursor-pointer transition-colors ${checked
                                                                 ? "bg-[#111] hover:bg-[#151515]"
                                                                 : "hover:bg-[#111]/50"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            {/* Custom Circle Checkbox */}
                                                             <div
-                                                                className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${
-                                                                    checked
-                                                                        ? "border-[#f59e0b] bg-[#f59e0b] text-black"
+                                                                className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${checked
+                                                                        ? "border-[#b158ff] bg-[#b158ff] text-black"
                                                                         : "border-zinc-700 bg-transparent text-transparent"
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {checked && <Check size={10} strokeWidth={4} />}
                                                             </div>
 
                                                             <span
-                                                                className={`text-[11px] font-semibold transition-all ${
-                                                                    checked ? "text-zinc-100" : "text-zinc-400"
-                                                                }`}
+                                                                className={`text-[11px] font-semibold transition-all ${checked ? "text-zinc-100" : "text-zinc-400"
+                                                                    }`}
                                                             >
                                                                 {colInfo.label}
                                                             </span>
                                                         </div>
 
-                                                        {/* Data Type Indicator Badge */}
                                                         <span className="text-[8px] font-black text-zinc-600 tracking-wider uppercase">
                                                             {colInfo.type}
                                                         </span>
@@ -708,23 +713,23 @@ export default function BookingsReportPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
-                                        {/* ADD FILTER card */}
+                                        {/* ADD FILTER Card */}
                                         <div className="rounded-[10px] border border-[#1e1e1e] bg-[#0f0f0f]">
-                                            <div className="border-l-2 border-[#f59e0b] p-3 rounded-r-[9px] rounded-l-[8px]">
-                                                <p className="text-[9px] font-black tracking-widest text-[#f59e0b] uppercase mb-3">Add Filter</p>
+                                            <div className="border-l-2 border-[#b158ff] p-3 rounded-r-[9px] rounded-l-[8px]">
+                                                <p className="text-[9px] font-black tracking-widest text-[#b158ff] uppercase mb-3">Add Filter</p>
 
-                                                {/* Column selector custom dropdown */}
+                                                {/* Column Selection */}
                                                 <div className="relative mb-2">
                                                     <button
-                                                        ref={columnBtnRef}
                                                         onClick={() => {
                                                             setColumnDropdownOpen(v => !v);
                                                             setOperatorDropdownOpen(false);
+                                                            setValueDropdownOpen(false);
                                                         }}
-                                                        className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-left transition-colors hover:border-[#333]"
+                                                        className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] hover:border-[#333] transition-colors"
                                                     >
                                                         <span className={pendingFilterColumn ? "text-white font-semibold" : "text-zinc-500"}>
-                                                            {pendingFilterColumn ? (metadata?.columns[pendingFilterColumn]?.label || pendingFilterColumn) : "Select Column"}
+                                                            {pendingFilterColumn ? getColInfo(pendingFilterColumn).label : "Select Column"}
                                                         </span>
                                                         <ChevronRight size={12} className={`text-zinc-500 transition-transform ${columnDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                     </button>
@@ -735,32 +740,32 @@ export default function BookingsReportPage() {
                                                             ref={columnDropdownRef}
                                                             className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-50 shadow-2xl max-h-[240px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
                                                         >
-                                                            {Object.entries(metadata.columns).map(([colKey, colInfo]) => (
+                                                            {Object.keys(metadata.columns).map((colKey) => (
                                                                 <button
                                                                     key={colKey}
                                                                     onClick={() => {
                                                                         setPendingFilterColumn(colKey);
                                                                         setColumnDropdownOpen(false);
                                                                     }}
-                                                                    className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
-                                                                        pendingFilterColumn === colKey ? "text-[#f59e0b]" : "text-zinc-300"
-                                                                    }`}
+                                                                    className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${pendingFilterColumn === colKey ? "text-[#b158ff]" : "text-zinc-300"
+                                                                        }`}
                                                                 >
-                                                                    {colInfo.label}
+                                                                    {getColInfo(colKey).label}
                                                                 </button>
                                                             ))}
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Operator + Value row */}
+                                                {/* Operator & Value Field */}
                                                 <div className="flex gap-2 mb-3">
-                                                    {/* Operator custom dropdown */}
-                                                    <div className="relative shrink-0" ref={operatorDropdownRef}>
+                                                    {/* Operator Selection */}
+                                                    <div className="relative shrink-0">
                                                         <button
                                                             onClick={() => {
                                                                 setOperatorDropdownOpen(v => !v);
                                                                 setColumnDropdownOpen(false);
+                                                                setValueDropdownOpen(false);
                                                             }}
                                                             className="flex items-center gap-1.5 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-zinc-300 font-semibold whitespace-nowrap hover:border-[#333] transition-colors"
                                                         >
@@ -768,7 +773,10 @@ export default function BookingsReportPage() {
                                                             <ChevronRight size={11} className={`text-zinc-500 transition-transform ${operatorDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                         </button>
                                                         {operatorDropdownOpen && (
-                                                            <div className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100">
+                                                            <div
+                                                                ref={operatorDropdownRef}
+                                                                className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100"
+                                                            >
                                                                 {[
                                                                     { id: "equals", label: "Equals" },
                                                                     { id: "contains", label: "Contains" },
@@ -782,7 +790,7 @@ export default function BookingsReportPage() {
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#f59e0b]" : "text-transparent"}`}>✓</span>
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#b158ff]" : "text-transparent"}`}>✓</span>
                                                                         {op.label}
                                                                     </button>
                                                                 ))}
@@ -790,26 +798,53 @@ export default function BookingsReportPage() {
                                                         )}
                                                     </div>
 
-                                                    {/* Value input */}
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Value..."
-                                                        value={pendingFilterValue}
-                                                        onChange={e => setPendingFilterValue(e.target.value)}
-                                                        onKeyDown={e => {
-                                                            if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
-                                                                setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
-                                                                setPage(1);
-                                                                setPendingFilterColumn("");
-                                                                setPendingFilterValue("");
-                                                                setPendingFilterOperator("equals");
-                                                            }
-                                                        }}
-                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-amber-500/50"
-                                                    />
+                                                    {/* Value Input and Autocomplete Suggestions */}
+                                                    <div className="relative flex-1 min-w-0">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Value..."
+                                                            value={pendingFilterValue}
+                                                            onChange={e => {
+                                                                setPendingFilterValue(e.target.value);
+                                                                setValueDropdownOpen(true);
+                                                            }}
+                                                            onFocus={() => setValueDropdownOpen(true)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
+                                                                    setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
+                                                                    setPage(1);
+                                                                    setPendingFilterColumn("");
+                                                                    setPendingFilterValue("");
+                                                                    setPendingFilterOperator("equals");
+                                                                    setValueDropdownOpen(false);
+                                                                }
+                                                            }}
+                                                            className="w-full bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-[#b158ff]/50"
+                                                        />
+
+                                                        {valueDropdownOpen && filterSuggestions.length > 0 && (
+                                                            <div
+                                                                ref={valueDropdownRef}
+                                                                className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-[9999] shadow-2xl max-h-[160px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
+                                                            >
+                                                                {filterSuggestions.map((sug, idx) => (
+                                                                    <button
+                                                                        key={idx}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setPendingFilterValue(sug);
+                                                                            setValueDropdownOpen(false);
+                                                                        }}
+                                                                        className="w-full text-left px-4 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium border-b border-[#232323]/30 last:border-b-0"
+                                                                    >
+                                                                        {sug}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
 
-                                                {/* Add Filter button */}
                                                 <button
                                                     onClick={() => {
                                                         if (!pendingFilterColumn || !pendingFilterValue.trim()) return;
@@ -817,31 +852,36 @@ export default function BookingsReportPage() {
                                                             column: pendingFilterColumn,
                                                             operator: pendingFilterOperator,
                                                             value: pendingFilterValue.trim(),
-                                                            }]);
+                                                        }]);
                                                         setPage(1);
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
                                                         setPendingFilterOperator("equals");
-                                                    }}
+                                                        setValueDropdownOpen(false);
+                                                     }}
                                                     disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
-                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#b45309] to-[#92400e] hover:from-[#c05a0a] hover:to-[#a14a0f] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#9333ea] to-[#7c3aed] hover:from-[#a855f7] hover:to-[#9333ea] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
                                                 </button>
-                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: Area = Patio, Covers &gt; 4</p>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: redeemed = false</p>
                                             </div>
                                         </div>
 
-                                        {/* Active filters chips */}
+                                        {/* Filter Chips */}
                                         {activeFilters.length > 0 && (
                                             <div className="space-y-1.5">
                                                 {activeFilters.map((f, i) => (
                                                     <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
-                                                        <span className="text-[10px] font-medium leading-tight">
-                                                            <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
-                                                            <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
-                                                            <span className="text-[#f59e0b]">{f.value}</span>
-                                                        </span>
+                                                        <div className="flex flex-col min-w-0 text-[10px]">
+                                                            <span className="text-white font-bold">{getColInfo(f.column).label}</span>
+                                                            <div className="flex items-center gap-1.5 mt-1 text-[9px] font-black">
+                                                                <span className="px-1.5 py-0.5 rounded bg-[#1a1a1a] text-zinc-400">
+                                                                    {f.operator === "equals" ? "EQUALS" : f.operator === "contains" ? "LIKE" : "IN"}
+                                                                </span>
+                                                                <span className="text-[#b158ff] truncate max-w-[180px]">{f.value}</span>
+                                                            </div>
+                                                        </div>
                                                         <button
                                                             onClick={() => {
                                                                 setActiveFilters(prev => prev.filter((_, idx) => idx !== i));
@@ -870,9 +910,8 @@ export default function BookingsReportPage() {
                         </div>
                     </div>
 
-                    {/* ── Right Content Area: Main Booking Report Preview Table ── */}
+                    {/* ── Right Content Area: Table Preview ── */}
                     <div className="flex-1 flex flex-col p-[32px] overflow-y-auto min-h-0 bg-[#070707]">
-                        {/* Error Alert Box */}
                         {error && (
                             <div className="no-print p-4 bg-red-950/20 border border-red-800/30 rounded-[12px] mb-6 flex items-start gap-3">
                                 <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
@@ -883,24 +922,23 @@ export default function BookingsReportPage() {
                             </div>
                         )}
 
-                        {/* Report Container Box */}
                         <div className="flex-1 flex flex-col border border-[#161616] rounded-[12px] bg-[#0f0f0f] overflow-hidden min-h-0">
-                            {/* Table Header Filter / Title / Search Controls */}
+                            {/* Table Header toolbar */}
                             <div className="no-print p-6 border-b border-[#161616] flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center text-[#f59e0b]">
-                                        <Calendar size={18} />
+                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#9333ea]/10 border border-[#9333ea]/20 flex items-center justify-center text-[#b158ff]">
+                                        <Ticket size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-[14px] font-bold text-white">Booking Report Preview</h3>
-                                        <p className="text-[#f59e0b] text-[10px] font-bold mt-0.5">
+                                        <h3 className="text-[14px] font-bold text-white">Coupon Report Preview</h3>
+                                        <p className="text-[#b158ff] text-[10px] font-bold mt-0.5">
                                             {loading && !reportData ? (
                                                 <span className="flex items-center gap-1.5">
                                                     <Loader2 className="animate-spin" size={10} />
                                                     Checking database...
                                                 </span>
                                             ) : (
-                                                `${reportData?.total || 0} reservations found`
+                                                `${reportData?.total || 0} coupons found`
                                             )}
                                         </p>
                                     </div>
@@ -912,33 +950,32 @@ export default function BookingsReportPage() {
                                         placeholder="Search results..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-amber-500/50"
+                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-[#b158ff]/50"
                                     />
                                     <Search size={12} className="absolute left-3 top-3.5 text-zinc-500" />
                                 </div>
                             </div>
 
-                            {/* Responsive Table Scroll Container */}
+                            {/* Responsive Table Container */}
                             <div className="flex-1 overflow-auto min-h-0 relative">
                                 {loading && (
                                     <div className="no-print absolute inset-0 bg-[#0f0f0f]/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-[#f59e0b]" size={32} />
+                                            <Loader2 className="animate-spin text-[#b158ff]" size={32} />
                                             <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Syncing records...</span>
                                         </div>
                                     </div>
                                 )}
 
                                 <table className="w-full border-collapse text-left">
-                                    {/* Warm Deep Bronze Header matching custom preview design */}
-                                    <thead className="bg-[#20150e] border-b border-[#f59e0b]/10 sticky top-0 z-1">
+                                    <thead className="bg-[#1c0d2b] border-b border-[#b158ff]/10 sticky top-0 z-1">
                                         <tr>
                                             {selectedColumns.map((colKey) => (
                                                 <th
                                                     key={colKey}
-                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#281c12]"
+                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#2d1245]"
                                                 >
-                                                    {metadata?.columns[colKey]?.label || colKey}
+                                                    {getColInfo(colKey).label}
                                                 </th>
                                             ))}
                                         </tr>
@@ -954,33 +991,50 @@ export default function BookingsReportPage() {
                                                         const val = row[colKey];
                                                         const isDate = metadata?.dateColumns?.includes(colKey);
 
-                                                        // Customer name column gets initials avatar bubble
+                                                        // Customer name avatar formatting
                                                         if (colKey === "customer_name") {
-                                                            const nameStr = String(val || "-");
+                                                            const nameStr = val ? String(val) : "—";
                                                             return (
                                                                 <td key={colKey} className="px-6 py-4 border-b border-[#161616]">
                                                                     <div className="flex items-center gap-3">
                                                                         <div
                                                                             className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${getAvatarStyle(
-                                                                                nameStr
+                                                                                val
                                                                             )}`}
                                                                         >
-                                                                            {getInitials(nameStr)}
+                                                                            {getInitials(val)}
                                                                         </div>
-                                                                        <span className="font-bold text-white">{nameStr}</span>
+                                                                        <span className="font-semibold text-white">{nameStr}</span>
                                                                     </div>
                                                                 </td>
                                                             );
                                                         }
 
+                                                        // Bold codes
+                                                        if (colKey === "coupon_code" || colKey === "reference_no") {
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-white font-bold uppercase tracking-wider">
+                                                                    {String(val || "—")}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Boolean redeemed rendering
+                                                        if (colKey === "redeemed") {
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold">
+                                                                    {val === true ? "Yes" : "No"}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Default Date and String rendering
                                                         return (
                                                             <td
                                                                 key={colKey}
-                                                                className={`px-6 py-4 border-b border-[#161616] ${
-                                                                    colKey === "covers" ? "font-bold text-[#f59e0b]" : "text-zinc-300 font-semibold"
-                                                                }`}
+                                                                className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold"
                                                             >
-                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null ? "-" : val)}
+                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null || val === "" ? "—" : val)}
                                                             </td>
                                                         );
                                                     })}
@@ -992,7 +1046,7 @@ export default function BookingsReportPage() {
                                                     colSpan={selectedColumns.length || 1}
                                                     className="px-6 py-12 text-center text-zinc-500 font-medium italic"
                                                 >
-                                                    {!loading && "No matching reservations found."}
+                                                    {!loading && "No matching coupons found."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1000,7 +1054,7 @@ export default function BookingsReportPage() {
                                 </table>
                             </div>
 
-                            {/* Pagination and Rows Count Footer */}
+                            {/* Pagination and Rows Count Selector Footer */}
                             {reportData && (
                                 <div className="no-print px-6 py-4 border-t border-[#161616] bg-[#0c0c0c] flex items-center justify-between shrink-0 pagination-footer text-[10px] text-zinc-400 font-bold select-none">
                                     <div>
@@ -1012,10 +1066,9 @@ export default function BookingsReportPage() {
                                         <span className="text-white">
                                             {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
-                                        of <span className="text-[#f59e0b] font-black">{reportData.total}</span> results
+                                        of <span className="text-[#b158ff] font-black">{reportData.total}</span> results
                                     </div>
 
-                                    {/* Rows Count Page Selector */}
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-zinc-500 uppercase text-[9px]">Rows:</span>
@@ -1026,18 +1079,17 @@ export default function BookingsReportPage() {
                                                         setPageSize(size);
                                                         setPage(1);
                                                     }}
-                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${
-                                                        pageSize === size
-                                                            ? "bg-[#f59e0b] text-black"
+                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${pageSize === size
+                                                            ? "bg-[#b158ff] text-black"
                                                             : "bg-[#161616] text-zinc-400 hover:text-zinc-200 border border-[#232323]"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {size}
                                                 </button>
                                             ))}
                                         </div>
 
-                                        {/* Pagination Button Navigation */}
+                                        {/* Pagination Controls */}
                                         <div className="flex items-center gap-1">
                                             <button
                                                 disabled={page <= 1}
@@ -1056,13 +1108,12 @@ export default function BookingsReportPage() {
                                                         key={index}
                                                         disabled={isDots}
                                                         onClick={() => !isDots && setPage(Number(pNum))}
-                                                        className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
-                                                            active
-                                                                ? "bg-[#f59e0b] text-black font-extrabold"
+                                                        className={`w-6 h-6 rounded flex items-center justify-center transition-all ${active
+                                                                ? "bg-[#b158ff] text-black font-extrabold"
                                                                 : isDots
-                                                                ? "text-zinc-600 bg-transparent font-normal cursor-default"
-                                                                : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
-                                                        }`}
+                                                                    ? "text-zinc-600 bg-transparent font-normal cursor-default"
+                                                                    : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
+                                                            }`}
                                                     >
                                                         {pNum}
                                                     </button>

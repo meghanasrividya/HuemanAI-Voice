@@ -41,6 +41,7 @@ const reports = [
         iconBg: "bg-emerald-500/10",
         border: "border-emerald-500/20",
         icon: <MessageSquare size={18} />,
+        href: "/reports/feedback",
     },
 
     {
@@ -51,6 +52,7 @@ const reports = [
         iconBg: "bg-blue-500/10",
         border: "border-blue-500/20",
         icon: <ClipboardCheck size={18} />,
+        href: "/reports/actions",
     },
 
     {
@@ -61,6 +63,7 @@ const reports = [
         iconBg: "bg-purple-500/10",
         border: "border-purple-500/20",
         icon: <Ticket size={18} />,
+        href: "/reports/coupons",
     },
 ];
 

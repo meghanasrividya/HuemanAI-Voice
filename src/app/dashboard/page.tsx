@@ -433,6 +433,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"reservation" | "feedback">("reservation");
 
   const fetchDashboard = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem("access_token")?.replace("Bearer ", "") || "";
       const csrf = localStorage.getItem("csrf_token") || "";
@@ -450,6 +451,7 @@ export default function DashboardPage() {
   };
 
   const fetchAnalyticsInsights = async () => {
+    setAnalyticsLoading(true);
     try {
       const token = localStorage.getItem("access_token")?.replace("Bearer ", "") || "";
       const csrf = localStorage.getItem("csrf_token") || "";
@@ -467,6 +469,7 @@ export default function DashboardPage() {
   };
 
   const fetchFeedback = async () => {
+    setFeedbackLoading(true);
     try {
       const token = localStorage.getItem("access_token")?.replace("Bearer ", "") || "";
       const csrf = localStorage.getItem("csrf_token") || "";
@@ -485,12 +488,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      fetchDashboard();
-      fetchAnalyticsInsights();
-      fetchFeedback();
+      if (activeTab === "reservation") {
+        fetchDashboard();
+        fetchAnalyticsInsights();
+      } else if (activeTab === "feedback") {
+        fetchFeedback();
+      }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [activeTab]);
 
   const dashboardData = useMemo<DashboardMetrics | null>(() => {
     if (!data) return null;
@@ -577,7 +583,11 @@ export default function DashboardPage() {
     };
   }, [data]);
 
-  if (loading || analyticsLoading || feedbackLoading || !data || !dashboardData || !feedbackData) {
+  const isCurrentTabLoading = activeTab === "reservation"
+    ? (loading || analyticsLoading || !data || !dashboardData)
+    : (feedbackLoading || !feedbackData);
+
+  if (isCurrentTabLoading) {
     return (
       <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -610,16 +620,16 @@ export default function DashboardPage() {
 
           {/* Nav */}
           <nav className="px-3 pt-4 space-y-1">
-            {[
+            {([
               { icon: <LayoutDashboard size={16} />, label: "Dashboard", href: "/dashboard", active: true },
               { icon: <Phone size={16} />, label: "Calls", href: "/calls" },
               { icon: <ClipboardList size={16} />, label: "Actions", href: "/actions" },
               { icon: <TrendingUp size={16} />, label: "Insights", href: "/insights" },
               { icon: <PhoneCall size={16} />, label: "Outbound", href: "/outbound" },
               { icon: <FileBarChart2 size={16} />, label: "Reports", href: "/reports" },
-              { icon: <Sparkles size={16} />, label: "Netra AI", subLabel: "Coming Soon", purple: true },
+              // { icon: <Sparkles size={16} />, label: "Netra AI", subLabel: "Coming Soon", purple: true },
               { icon: <Settings size={16} />, label: "Admin", href: "/admin" },
-            ].map((item) => {
+            ] as Array<{ icon: React.ReactNode; label: string; href?: string; active?: boolean; subLabel?: string; purple?: boolean }>).map((item) => {
               const content = (
                 <>
                   <span className={`shrink-0 ${item.purple ? "text-[#b158ff]" : ""}`}>
@@ -714,21 +724,19 @@ export default function DashboardPage() {
             <div className="flex items-center bg-[#0f0f0f] border border-[#222] rounded-full p-[3px]">
               <button
                 onClick={() => setActiveTab("reservation")}
-                className={`h-[28px] rounded-full px-5 text-[10px] transition-all duration-200 ${
-                  activeTab === "reservation"
+                className={`h-[28px] rounded-full px-5 text-[10px] transition-all duration-200 ${activeTab === "reservation"
                     ? "bg-white text-black font-bold shadow-[0_2px_8px_rgba(255,255,255,0.15)]"
                     : "text-zinc-500 hover:text-white font-medium"
-                }`}
+                  }`}
               >
                 Reservation
               </button>
               <button
                 onClick={() => setActiveTab("feedback")}
-                className={`h-[28px] rounded-full px-5 text-[10px] transition-all duration-200 ${
-                  activeTab === "feedback"
+                className={`h-[28px] rounded-full px-5 text-[10px] transition-all duration-200 ${activeTab === "feedback"
                     ? "bg-white text-black font-bold shadow-[0_2px_8px_rgba(255,255,255,0.15)]"
                     : "text-zinc-500 hover:text-white font-medium"
-                }`}
+                  }`}
               >
                 Feedback
               </button>
@@ -754,43 +762,43 @@ export default function DashboardPage() {
         <div className="w-full px-[24px] pt-[22px] pb-8 space-y-[18px]">
           {activeTab === "reservation" ? (
             <>
-              <CallOutcomes data={dashboardData} />
+              <CallOutcomes data={dashboardData!} />
 
               <div className="grid grid-cols-4 gap-[14px]">
                 <KPI
                   title="Total Bookings Captured"
-                  value={data.totalBookingsCaptured}
-                  growth={data.kpiTrends?.totalBookingsCaptured?.changePct}
-                  growthLabel={`${data.kpiTrends?.totalBookingsCaptured?.changePct}%`}
+                  value={data!.totalBookingsCaptured}
+                  growth={data!.kpiTrends?.totalBookingsCaptured?.changePct}
+                  growthLabel={`${data!.kpiTrends?.totalBookingsCaptured?.changePct}%`}
                 />
-                <KPI title="Total Covers" value={data.totalCovers} />
-                <KPI title="Reservations %" value={`${data.confirmedPercentage}%`} />
+                <KPI title="Total Covers" value={data!.totalCovers} />
+                <KPI title="Reservations %" value={`${data!.confirmedPercentage}%`} />
                 <KPI
                   title="Avg Time"
-                  value={formatTime(data.avgTime)}
-                  growth={data.kpiTrends?.avgTime?.changePct}
-                  growthLabel={`${data.kpiTrends?.avgTime?.changePct}%`}
+                  value={formatTime(data!.avgTime)}
+                  growth={data!.kpiTrends?.avgTime?.changePct}
+                  growthLabel={`${data!.kpiTrends?.avgTime?.changePct}%`}
                   indicator
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-[18px] items-start">
-                <AfterHours data={dashboardData} />
-                <ReservationBreakdown data={data} metrics={dashboardData} />
+                <AfterHours data={dashboardData!} />
+                <ReservationBreakdown data={data!} metrics={dashboardData!} />
               </div>
 
               <BookingsBreakdown
-                metrics={dashboardData}
-                data={data}
+                metrics={dashboardData!}
+                data={data!}
               />
 
               <div className="grid grid-cols-3 gap-[18px]">
-                <CallsPerDay data={data} />
-                <UpsellPerformance data={data} />
+                <CallsPerDay data={data!} />
+                <UpsellPerformance data={data!} />
               </div>
 
               <div className="grid grid-cols-2 gap-[18px]">
-                <ConversionFunnel data={data} />
+                <ConversionFunnel data={data!} />
                 <TrendingTopics analyticsData={analyticsData} />
               </div>
 
@@ -799,7 +807,7 @@ export default function DashboardPage() {
                 <TopSpecialRequests analyticsData={analyticsData} />
               </div>
 
-              <ReservationTiming data={data} metrics={dashboardData} />
+              <ReservationTiming data={data!} metrics={dashboardData!} />
             </>
           ) : (
             <>
@@ -1839,7 +1847,7 @@ function FeedbackThemes({ data }: { data: FeedbackData }) {
       </p>
 
       {!data.topPositiveThemes?.length &&
-      !data.topNegativeThemes?.length ? (
+        !data.topNegativeThemes?.length ? (
         <div className="text-zinc-500 text-[12px]">
           No theme data available
         </div>

@@ -22,19 +22,18 @@ import {
     ArrowLeft,
     AlertCircle,
     Loader2,
-    BedDouble,
+    MessageSquare,
 } from "lucide-react";
 import {
-    fetchBookingsMetadata,
-    generateBookingsReport,
+    fetchFeedbackMetadata,
+    generateFeedbackReport,
     ReportMetadata,
-    ReportDataResponse,
-    BookingReservation,
+    FeedbackReportDataResponse as ReportDataResponse,
+    FeedbackResponseItem as BookingReservation,
 } from "../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
-
-export default function BookingsReportPage() {
+export default function FeedbackReportPage() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
     const [reportData, setReportData] = useState<ReportDataResponse | null>(null);
@@ -105,7 +104,7 @@ export default function BookingsReportPage() {
         const loadMetadata = async () => {
             try {
                 setLoading(true);
-                const data = await fetchBookingsMetadata();
+                const data = await fetchFeedbackMetadata();
                 setMetadata(data);
                 setSelectedColumns(data.defaultColumns || []);
                 if (data.dateColumns && data.dateColumns.length > 0) {
@@ -219,12 +218,12 @@ export default function BookingsReportPage() {
                     }
                 }
 
-                const res = await generateBookingsReport({
+                const res = await generateFeedbackReport({
                     columns: selectedColumns,
                     dateField,
-                    startDate: start || undefined,
-                    endDate: end || undefined,
-                    search: debouncedSearch || undefined,
+                    startDate: start,
+                    endDate: end,
+                    search: debouncedSearch,
                     page,
                     pageSize,
                     filters: activeFilters,
@@ -281,14 +280,14 @@ export default function BookingsReportPage() {
     };
 
     const getAvatarStyle = (name?: string) => {
-        if (!name) return "bg-amber-600/20 text-amber-500";
+        if (!name) return "bg-emerald-600/20 text-emerald-500";
         const colors = [
-            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
             "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald
             "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue
             "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white", // Purple
             "bg-gradient-to-br from-[#ec4899] to-[#db2777] text-white", // Pink
             "bg-gradient-to-br from-[#06b6d4] to-[#0891b2] text-white", // Cyan
+            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
@@ -344,7 +343,7 @@ export default function BookingsReportPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `bookings_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.setAttribute("download", `feedback_report_${new Date().toISOString().split("T")[0]}.csv`);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
@@ -586,7 +585,7 @@ export default function BookingsReportPage() {
                         <div className="flex items-center text-[13px] font-semibold text-zinc-400 gap-1.5">
                             <Link href="/reports" className="hover:text-zinc-200 transition-colors">Reports</Link>
                             <span className="text-zinc-600 font-normal">&gt;</span>
-                            <span className="text-white font-bold">Bookings Reports</span>
+                            <span className="text-white font-bold">Feedback Reports</span>
                         </div>
                     </div>
 
@@ -600,7 +599,7 @@ export default function BookingsReportPage() {
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="h-[36px] px-4 rounded-[8px] bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
+                            className="h-[36px] px-4 rounded-[8px] bg-[#10b981] hover:bg-[#059669] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
                         >
                             <Download size={13} />
                             Export CSV
@@ -627,8 +626,8 @@ export default function BookingsReportPage() {
                             customEndDate={customEndDate}
                             setCustomEndDate={setCustomEndDate}
                             setPage={setPage}
-                            theme="amber"
-                            showDropdown={true}
+                            theme="emerald"
+                            showDropdown={false}
                         />
 
                         {/* COLUMN SELECTION TABS */}
@@ -639,12 +638,12 @@ export default function BookingsReportPage() {
                                     onClick={() => setActiveTab("columns")}
                                     className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${
                                         activeTab === "columns"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                            ? "border-[#10b981] text-[#10b981]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
                                     Columns
-                                    <span className="px-1.5 py-0.5 rounded-full bg-[#251b14] border border-[#f59e0b]/20 text-[9px] text-[#f59e0b] font-black">
+                                    <span className="px-1.5 py-0.5 rounded-full bg-[#0c2c1e] border border-[#10b981]/20 text-[9px] text-[#10b981] font-black">
                                         {selectedColumns.length}
                                     </span>
                                 </button>
@@ -652,7 +651,7 @@ export default function BookingsReportPage() {
                                     onClick={() => setActiveTab("filters")}
                                     className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${
                                         activeTab === "filters"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                            ? "border-[#10b981] text-[#10b981]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
@@ -682,7 +681,7 @@ export default function BookingsReportPage() {
                                                             <div
                                                                 className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${
                                                                     checked
-                                                                        ? "border-[#f59e0b] bg-[#f59e0b] text-black"
+                                                                        ? "border-[#10b981] bg-[#10b981] text-black"
                                                                         : "border-zinc-700 bg-transparent text-transparent"
                                                                 }`}
                                                             >
@@ -710,8 +709,8 @@ export default function BookingsReportPage() {
                                     <div className="space-y-3">
                                         {/* ADD FILTER card */}
                                         <div className="rounded-[10px] border border-[#1e1e1e] bg-[#0f0f0f]">
-                                            <div className="border-l-2 border-[#f59e0b] p-3 rounded-r-[9px] rounded-l-[8px]">
-                                                <p className="text-[9px] font-black tracking-widest text-[#f59e0b] uppercase mb-3">Add Filter</p>
+                                            <div className="border-l-2 border-[#10b981] p-3 rounded-r-[9px] rounded-l-[8px]">
+                                                <p className="text-[9px] font-black tracking-widest text-[#10b981] uppercase mb-3">Add Filter</p>
 
                                                 {/* Column selector custom dropdown */}
                                                 <div className="relative mb-2">
@@ -743,7 +742,7 @@ export default function BookingsReportPage() {
                                                                         setColumnDropdownOpen(false);
                                                                     }}
                                                                     className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
-                                                                        pendingFilterColumn === colKey ? "text-[#f59e0b]" : "text-zinc-300"
+                                                                        pendingFilterColumn === colKey ? "text-[#10b981]" : "text-zinc-300"
                                                                     }`}
                                                                 >
                                                                     {colInfo.label}
@@ -782,7 +781,7 @@ export default function BookingsReportPage() {
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#f59e0b]" : "text-transparent"}`}>✓</span>
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#10b981]" : "text-transparent"}`}>✓</span>
                                                                         {op.label}
                                                                     </button>
                                                                 ))}
@@ -805,7 +804,7 @@ export default function BookingsReportPage() {
                                                                 setPendingFilterOperator("equals");
                                                             }
                                                         }}
-                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-amber-500/50"
+                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-emerald-500/50"
                                                     />
                                                 </div>
 
@@ -817,18 +816,18 @@ export default function BookingsReportPage() {
                                                             column: pendingFilterColumn,
                                                             operator: pendingFilterOperator,
                                                             value: pendingFilterValue.trim(),
-                                                            }]);
+                                                        }]);
                                                         setPage(1);
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
                                                         setPendingFilterOperator("equals");
                                                     }}
                                                     disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
-                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#b45309] to-[#92400e] hover:from-[#c05a0a] hover:to-[#a14a0f] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#047857] to-[#065f46] hover:from-[#059669] hover:to-[#047857] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
                                                 </button>
-                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: Area = Patio, Covers &gt; 4</p>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: review_type = public, rating_food &gt; 4</p>
                                             </div>
                                         </div>
 
@@ -840,7 +839,7 @@ export default function BookingsReportPage() {
                                                         <span className="text-[10px] font-medium leading-tight">
                                                             <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
                                                             <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
-                                                            <span className="text-[#f59e0b]">{f.value}</span>
+                                                            <span className="text-[#10b981]">{f.value}</span>
                                                         </span>
                                                         <button
                                                             onClick={() => {
@@ -888,19 +887,19 @@ export default function BookingsReportPage() {
                             {/* Table Header Filter / Title / Search Controls */}
                             <div className="no-print p-6 border-b border-[#161616] flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center text-[#f59e0b]">
-                                        <Calendar size={18} />
+                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center text-[#10b981]">
+                                        <MessageSquare size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-[14px] font-bold text-white">Booking Report Preview</h3>
-                                        <p className="text-[#f59e0b] text-[10px] font-bold mt-0.5">
+                                        <h3 className="text-[14px] font-bold text-white">Feedback Report Preview</h3>
+                                        <p className="text-[#10b981] text-[10px] font-bold mt-0.5">
                                             {loading && !reportData ? (
                                                 <span className="flex items-center gap-1.5">
                                                     <Loader2 className="animate-spin" size={10} />
                                                     Checking database...
                                                 </span>
                                             ) : (
-                                                `${reportData?.total || 0} reservations found`
+                                                `${reportData?.total || 0} responses found`
                                             )}
                                         </p>
                                     </div>
@@ -912,7 +911,7 @@ export default function BookingsReportPage() {
                                         placeholder="Search results..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-amber-500/50"
+                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-emerald-500/50"
                                     />
                                     <Search size={12} className="absolute left-3 top-3.5 text-zinc-500" />
                                 </div>
@@ -923,20 +922,20 @@ export default function BookingsReportPage() {
                                 {loading && (
                                     <div className="no-print absolute inset-0 bg-[#0f0f0f]/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-[#f59e0b]" size={32} />
+                                            <Loader2 className="animate-spin text-[#10b981]" size={32} />
                                             <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Syncing records...</span>
                                         </div>
                                     </div>
                                 )}
 
                                 <table className="w-full border-collapse text-left">
-                                    {/* Warm Deep Bronze Header matching custom preview design */}
-                                    <thead className="bg-[#20150e] border-b border-[#f59e0b]/10 sticky top-0 z-1">
+                                    {/* Warm Deep Green Header matching custom preview design */}
+                                    <thead className="bg-[#062419] border-b border-[#10b981]/10 sticky top-0 z-1">
                                         <tr>
                                             {selectedColumns.map((colKey) => (
                                                 <th
                                                     key={colKey}
-                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#281c12]"
+                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#082a1e]"
                                                 >
                                                     {metadata?.columns[colKey]?.label || colKey}
                                                 </th>
@@ -973,11 +972,23 @@ export default function BookingsReportPage() {
                                                             );
                                                         }
 
+                                                        // Display comments or custom dashes
+                                                        if (colKey === "comments") {
+                                                            const commentText = String(val || "").trim();
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold max-w-[280px] break-words whitespace-pre-line leading-relaxed">
+                                                                    {commentText ? commentText : "—"}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Check if rating column
+                                                        const isRating = colKey.startsWith("rating_");
                                                         return (
                                                             <td
                                                                 key={colKey}
                                                                 className={`px-6 py-4 border-b border-[#161616] ${
-                                                                    colKey === "covers" ? "font-bold text-[#f59e0b]" : "text-zinc-300 font-semibold"
+                                                                    isRating ? "font-bold text-zinc-100" : "text-zinc-300 font-semibold"
                                                                 }`}
                                                             >
                                                                 {isDate ? formatDate(String(val)) : String(val === undefined || val === null ? "-" : val)}
@@ -992,7 +1003,7 @@ export default function BookingsReportPage() {
                                                     colSpan={selectedColumns.length || 1}
                                                     className="px-6 py-12 text-center text-zinc-500 font-medium italic"
                                                 >
-                                                    {!loading && "No matching reservations found."}
+                                                    {!loading && "No matching feedback found."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1012,7 +1023,7 @@ export default function BookingsReportPage() {
                                         <span className="text-white">
                                             {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
-                                        of <span className="text-[#f59e0b] font-black">{reportData.total}</span> results
+                                        of <span className="text-[#10b981] font-black">{reportData.total}</span> results
                                     </div>
 
                                     {/* Rows Count Page Selector */}
@@ -1028,7 +1039,7 @@ export default function BookingsReportPage() {
                                                     }}
                                                     className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${
                                                         pageSize === size
-                                                            ? "bg-[#f59e0b] text-black"
+                                                            ? "bg-[#10b981] text-black"
                                                             : "bg-[#161616] text-zinc-400 hover:text-zinc-200 border border-[#232323]"
                                                     }`}
                                                 >
@@ -1058,7 +1069,7 @@ export default function BookingsReportPage() {
                                                         onClick={() => !isDots && setPage(Number(pNum))}
                                                         className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
                                                             active
-                                                                ? "bg-[#f59e0b] text-black font-extrabold"
+                                                                ? "bg-[#10b981] text-black font-extrabold"
                                                                 : isDots
                                                                 ? "text-zinc-600 bg-transparent font-normal cursor-default"
                                                                 : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"

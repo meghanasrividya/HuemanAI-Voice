@@ -22,19 +22,18 @@ import {
     ArrowLeft,
     AlertCircle,
     Loader2,
-    BedDouble,
+    ClipboardCheck,
 } from "lucide-react";
 import {
-    fetchBookingsMetadata,
-    generateBookingsReport,
+    fetchActionsMetadata,
+    generateActionsReport,
     ReportMetadata,
-    ReportDataResponse,
-    BookingReservation,
+    ActionsReportDataResponse as ReportDataResponse,
+    ActionResponseItem as BookingReservation,
 } from "../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
-
-export default function BookingsReportPage() {
+export default function ActionsReportPage() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
     const [reportData, setReportData] = useState<ReportDataResponse | null>(null);
@@ -43,7 +42,7 @@ export default function BookingsReportPage() {
 
     // Filter and Pagination States
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-    const [dateField, setDateField] = useState<string>("visit_date");
+    const [dateField, setDateField] = useState<string>("created_at");
     const [dateRangeType, setDateRangeType] = useState<"7days" | "30days" | "month" | "custom" | null>(null);
     
     // Default custom date range: past 30 days
@@ -100,12 +99,20 @@ export default function BookingsReportPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
+    // Helper to get columns metadata with proper fallback for null fields (created_at)
+    const getColInfo = (colKey: string) => {
+        if (colKey === "created_at") {
+            return { label: "created_at", type: "UNKNOWN" };
+        }
+        return metadata?.columns[colKey] || { label: colKey, type: "UNKNOWN" };
+    };
+
     // 1. Fetch Metadata on Mount
     useEffect(() => {
         const loadMetadata = async () => {
             try {
                 setLoading(true);
-                const data = await fetchBookingsMetadata();
+                const data = await fetchActionsMetadata();
                 setMetadata(data);
                 setSelectedColumns(data.defaultColumns || []);
                 if (data.dateColumns && data.dateColumns.length > 0) {
@@ -219,12 +226,12 @@ export default function BookingsReportPage() {
                     }
                 }
 
-                const res = await generateBookingsReport({
+                const res = await generateActionsReport({
                     columns: selectedColumns,
                     dateField,
-                    startDate: start || undefined,
-                    endDate: end || undefined,
-                    search: debouncedSearch || undefined,
+                    startDate: start,
+                    endDate: end,
+                    search: debouncedSearch,
                     page,
                     pageSize,
                     filters: activeFilters,
@@ -259,9 +266,13 @@ export default function BookingsReportPage() {
                 if (prev.length <= 1) return prev; // Keep at least one column
                 return prev.filter((k) => k !== colKey);
             } else {
-                // Keep the order matching metadata columns if possible
                 if (metadata?.columns) {
-                    return Object.keys(metadata.columns).filter(
+                    // Match order inside metadata
+                    const allPossible = Object.keys(metadata.columns);
+                    if (!allPossible.includes("created_at")) {
+                        allPossible.push("created_at"); // ensure created_at is in sorting order
+                    }
+                    return allPossible.filter(
                         (k) => k === colKey || prev.includes(k)
                     );
                 }
@@ -271,8 +282,8 @@ export default function BookingsReportPage() {
     };
 
     // Calculate avatar gradient and initials
-    const getInitials = (name?: string) => {
-        if (!name) return "";
+    const getInitials = (name?: string | null) => {
+        if (!name || name === "—") return "";
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -280,15 +291,15 @@ export default function BookingsReportPage() {
         return name.slice(0, 2).toUpperCase();
     };
 
-    const getAvatarStyle = (name?: string) => {
-        if (!name) return "bg-amber-600/20 text-amber-500";
+    const getAvatarStyle = (name?: string | null) => {
+        if (!name || name === "—") return "bg-zinc-800 text-zinc-400 border border-zinc-700/50";
         const colors = [
-            "bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white", // Amber
-            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald
+            "bg-gradient-to-br from-[#f97316] to-[#ea580c] text-white", // Orange (matching DL, TJ, SD in mockup)
+            "bg-gradient-to-br from-[#eab308] to-[#ca8a04] text-white", // Yellow (matching TF in mockup)
+            "bg-gradient-to-br from-[#10b981] to-[#059669] text-white", // Emerald (matching MT in mockup)
+            "bg-gradient-to-br from-[#6b7280] to-[#4b5563] text-white", // Grey (matching KL in mockup)
             "bg-gradient-to-br from-[#3b82f6] to-[#2563eb] text-white", // Blue
             "bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] text-white", // Purple
-            "bg-gradient-to-br from-[#ec4899] to-[#db2777] text-white", // Pink
-            "bg-gradient-to-br from-[#06b6d4] to-[#0891b2] text-white", // Cyan
         ];
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
@@ -298,8 +309,8 @@ export default function BookingsReportPage() {
         return colors[index];
     };
 
-    // Date formatting helper: 22 Mar 2026
-    const formatDate = (dateStr?: string) => {
+    // Date formatting helper with exact time: 17 Mar 2026, 15:36
+    const formatDateTime = (dateStr?: string | null) => {
         if (!dateStr) return "-";
         try {
             const date = new Date(dateStr);
@@ -311,10 +322,27 @@ export default function BookingsReportPage() {
             ];
             const month = monthNames[date.getMonth()];
             const year = date.getFullYear();
-            return `${day} ${month} ${year}`;
+            const hours = String(date.getHours()).padStart(2, "0");
+            const minutes = String(date.getMinutes()).padStart(2, "0");
+            return `${day} ${month} ${year}, ${hours}:${minutes}`;
         } catch {
             return dateStr;
         }
+    };
+
+    // Request type mapper helper: misc -> Callback Needed, cancellation -> Cancellation, etc.
+    const mapRequestType = (type?: string) => {
+        if (!type) return "-";
+        const mapping: Record<string, string> = {
+            misc: "Callback Needed",
+            cancellation: "Cancellation",
+            large_group: "Large Group",
+            update: "Update",
+            waitlist: "Waitlist",
+            promotions: "Promotions",
+            incomplete_booking: "Incomplete Booking",
+        };
+        return mapping[type.toLowerCase()] || type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     };
 
     // Export CSV Helper
@@ -322,16 +350,20 @@ export default function BookingsReportPage() {
         if (!reportData || !metadata) return;
 
         // Header Row
-        const headers = selectedColumns.map((colKey) => metadata.columns[colKey]?.label || colKey);
+        const headers = selectedColumns.map((colKey) => getColInfo(colKey).label);
         
         // Data Rows
         const rows = reportData.data.map((row) =>
             selectedColumns.map((colKey) => {
                 let val = row[colKey];
                 if (val === undefined || val === null) return "";
+                // If it is a request_type, map it
+                if (colKey === "request_type") {
+                    val = mapRequestType(String(val));
+                }
                 // If it is a date column, format it
-                if (metadata.dateColumns.includes(colKey)) {
-                    val = formatDate(String(val));
+                else if (metadata.dateColumns.includes(colKey)) {
+                    val = formatDateTime(String(val));
                 }
                 // Escape commas and double quotes
                 const stringVal = String(val).replace(/"/g, '""');
@@ -344,7 +376,7 @@ export default function BookingsReportPage() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `bookings_report_${new Date().toISOString().split("T")[0]}.csv`);
+        link.setAttribute("download", `actions_report_${new Date().toISOString().split("T")[0]}.csv`);
         link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
@@ -380,11 +412,15 @@ export default function BookingsReportPage() {
         if (!reportData || activeFilters.length === 0) return reportData;
         const filtered = reportData.data.filter(row =>
             activeFilters.every(f => {
-                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
+                let cellVal = row[f.column];
+                if (f.column === "request_type") {
+                    cellVal = mapRequestType(String(cellVal));
+                }
+                const cellValStr = String(cellVal ?? "").toLowerCase().trim();
                 const filterVal = f.value.toLowerCase().trim();
-                if (f.operator === "equals") return cellVal === filterVal;
-                if (f.operator === "contains") return cellVal.includes(filterVal);
-                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
+                if (f.operator === "equals") return cellValStr === filterVal;
+                if (f.operator === "contains") return cellValStr.includes(filterVal);
+                if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellValStr === v);
                 return true;
             })
         );
@@ -586,7 +622,7 @@ export default function BookingsReportPage() {
                         <div className="flex items-center text-[13px] font-semibold text-zinc-400 gap-1.5">
                             <Link href="/reports" className="hover:text-zinc-200 transition-colors">Reports</Link>
                             <span className="text-zinc-600 font-normal">&gt;</span>
-                            <span className="text-white font-bold">Bookings Reports</span>
+                            <span className="text-white font-bold">Actions Reports</span>
                         </div>
                     </div>
 
@@ -600,7 +636,7 @@ export default function BookingsReportPage() {
                         </button>
                         <button
                             onClick={handleExportCSV}
-                            className="h-[36px] px-4 rounded-[8px] bg-[#f59e0b] hover:bg-[#d97706] text-black font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
+                            className="h-[36px] px-4 rounded-[8px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-[11px] flex items-center gap-2 transition-all cursor-pointer"
                         >
                             <Download size={13} />
                             Export CSV
@@ -615,7 +651,7 @@ export default function BookingsReportPage() {
                         <h2 className="text-[14px] font-bold text-white mb-1">Configuration</h2>
                         <p className="text-zinc-500 text-[10px] mb-6">Customize columns, dates & filters</p>
 
-                        {/* DATE RANGE FILTER BOX */}
+                        {/* DATE RANGE FILTER BOX (Using Blue theme) */}
                         <DateRangeFilter
                             metadata={metadata}
                             dateField={dateField}
@@ -627,7 +663,7 @@ export default function BookingsReportPage() {
                             customEndDate={customEndDate}
                             setCustomEndDate={setCustomEndDate}
                             setPage={setPage}
-                            theme="amber"
+                            theme="blue"
                             showDropdown={true}
                         />
 
@@ -639,12 +675,12 @@ export default function BookingsReportPage() {
                                     onClick={() => setActiveTab("columns")}
                                     className={`pb-2.5 text-[11px] font-bold border-b-2 tracking-wide flex items-center gap-1.5 transition-all relative ${
                                         activeTab === "columns"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                            ? "border-[#2563eb] text-[#2563eb]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
                                     Columns
-                                    <span className="px-1.5 py-0.5 rounded-full bg-[#251b14] border border-[#f59e0b]/20 text-[9px] text-[#f59e0b] font-black">
+                                    <span className="px-1.5 py-0.5 rounded-full bg-[#0f2147] border border-[#2563eb]/20 text-[9px] text-[#2563eb] font-black">
                                         {selectedColumns.length}
                                     </span>
                                 </button>
@@ -652,7 +688,7 @@ export default function BookingsReportPage() {
                                     onClick={() => setActiveTab("filters")}
                                     className={`ml-6 pb-2.5 text-[11px] font-bold border-b-2 tracking-wide transition-all ${
                                         activeTab === "filters"
-                                            ? "border-[#f59e0b] text-[#f59e0b]"
+                                            ? "border-[#2563eb] text-[#2563eb]"
                                             : "border-transparent text-zinc-500 hover:text-zinc-300"
                                     }`}
                                 >
@@ -665,8 +701,9 @@ export default function BookingsReportPage() {
                                 {activeTab === "columns" ? (
                                     <div className="space-y-1">
                                         {metadata &&
-                                            Object.entries(metadata.columns).map(([colKey, colInfo]) => {
+                                            Array.from(new Set([...Object.keys(metadata.columns), "created_at"])).map((colKey) => {
                                                 const checked = selectedColumns.includes(colKey);
+                                                const colInfo = getColInfo(colKey);
                                                 return (
                                                     <div
                                                         key={colKey}
@@ -678,11 +715,11 @@ export default function BookingsReportPage() {
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            {/* Custom Circle Checkbox */}
+                                                            {/* Custom Circle Checkbox (Blue) */}
                                                             <div
                                                                 className={`w-4 h-4 rounded-full flex items-center justify-center border transition-all ${
                                                                     checked
-                                                                        ? "border-[#f59e0b] bg-[#f59e0b] text-black"
+                                                                        ? "border-[#2563eb] bg-[#2563eb] text-black"
                                                                         : "border-zinc-700 bg-transparent text-transparent"
                                                                 }`}
                                                             >
@@ -710,8 +747,8 @@ export default function BookingsReportPage() {
                                     <div className="space-y-3">
                                         {/* ADD FILTER card */}
                                         <div className="rounded-[10px] border border-[#1e1e1e] bg-[#0f0f0f]">
-                                            <div className="border-l-2 border-[#f59e0b] p-3 rounded-r-[9px] rounded-l-[8px]">
-                                                <p className="text-[9px] font-black tracking-widest text-[#f59e0b] uppercase mb-3">Add Filter</p>
+                                            <div className="border-l-2 border-[#2563eb] p-3 rounded-r-[9px] rounded-l-[8px]">
+                                                <p className="text-[9px] font-black tracking-widest text-[#2563eb] uppercase mb-3">Add Filter</p>
 
                                                 {/* Column selector custom dropdown */}
                                                 <div className="relative mb-2">
@@ -724,7 +761,7 @@ export default function BookingsReportPage() {
                                                         className="w-full flex items-center justify-between bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-left transition-colors hover:border-[#333]"
                                                     >
                                                         <span className={pendingFilterColumn ? "text-white font-semibold" : "text-zinc-500"}>
-                                                            {pendingFilterColumn ? (metadata?.columns[pendingFilterColumn]?.label || pendingFilterColumn) : "Select Column"}
+                                                            {pendingFilterColumn ? getColInfo(pendingFilterColumn).label : "Select Column"}
                                                         </span>
                                                         <ChevronRight size={12} className={`text-zinc-500 transition-transform ${columnDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                     </button>
@@ -735,7 +772,7 @@ export default function BookingsReportPage() {
                                                             ref={columnDropdownRef}
                                                             className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-50 shadow-2xl max-h-[240px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
                                                         >
-                                                            {Object.entries(metadata.columns).map(([colKey, colInfo]) => (
+                                                            {Array.from(new Set([...Object.keys(metadata.columns), "created_at"])).map((colKey) => (
                                                                 <button
                                                                     key={colKey}
                                                                     onClick={() => {
@@ -743,10 +780,10 @@ export default function BookingsReportPage() {
                                                                         setColumnDropdownOpen(false);
                                                                     }}
                                                                     className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
-                                                                        pendingFilterColumn === colKey ? "text-[#f59e0b]" : "text-zinc-300"
+                                                                        pendingFilterColumn === colKey ? "text-[#2563eb]" : "text-zinc-300"
                                                                     }`}
                                                                 >
-                                                                    {colInfo.label}
+                                                                    {getColInfo(colKey).label}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -782,7 +819,7 @@ export default function BookingsReportPage() {
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#f59e0b]" : "text-transparent"}`}>✓</span>
+                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#2563eb]" : "text-transparent"}`}>✓</span>
                                                                         {op.label}
                                                                     </button>
                                                                 ))}
@@ -805,7 +842,7 @@ export default function BookingsReportPage() {
                                                                 setPendingFilterOperator("equals");
                                                             }
                                                         }}
-                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-amber-500/50"
+                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-blue-500/50"
                                                     />
                                                 </div>
 
@@ -817,18 +854,18 @@ export default function BookingsReportPage() {
                                                             column: pendingFilterColumn,
                                                             operator: pendingFilterOperator,
                                                             value: pendingFilterValue.trim(),
-                                                            }]);
+                                                        }]);
                                                         setPage(1);
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
                                                         setPendingFilterOperator("equals");
                                                     }}
                                                     disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
-                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#b45309] to-[#92400e] hover:from-[#c05a0a] hover:to-[#a14a0f] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#1d4ed8] to-[#1e40af] hover:from-[#2563eb] hover:to-[#1d4ed8] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
                                                 </button>
-                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: Area = Patio, Covers &gt; 4</p>
+                                                <p className="text-center text-[9px] text-zinc-600 mt-2">Example: status = open, priority = high</p>
                                             </div>
                                         </div>
 
@@ -838,9 +875,9 @@ export default function BookingsReportPage() {
                                                 {activeFilters.map((f, i) => (
                                                     <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
                                                         <span className="text-[10px] font-medium leading-tight">
-                                                            <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
+                                                            <span className="text-white font-bold">{getColInfo(f.column).label}</span>
                                                             <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
-                                                            <span className="text-[#f59e0b]">{f.value}</span>
+                                                            <span className="text-[#2563eb]">{f.value}</span>
                                                         </span>
                                                         <button
                                                             onClick={() => {
@@ -870,7 +907,7 @@ export default function BookingsReportPage() {
                         </div>
                     </div>
 
-                    {/* ── Right Content Area: Main Booking Report Preview Table ── */}
+                    {/* ── Right Content Area: Actions Report Preview Table ── */}
                     <div className="flex-1 flex flex-col p-[32px] overflow-y-auto min-h-0 bg-[#070707]">
                         {/* Error Alert Box */}
                         {error && (
@@ -888,19 +925,19 @@ export default function BookingsReportPage() {
                             {/* Table Header Filter / Title / Search Controls */}
                             <div className="no-print p-6 border-b border-[#161616] flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center text-[#f59e0b]">
-                                        <Calendar size={18} />
+                                    <div className="w-[42px] h-[42px] rounded-[10px] bg-[#2563eb]/10 border border-[#2563eb]/20 flex items-center justify-center text-[#2563eb]">
+                                        <ClipboardCheck size={18} />
                                     </div>
                                     <div>
-                                        <h3 className="text-[14px] font-bold text-white">Booking Report Preview</h3>
-                                        <p className="text-[#f59e0b] text-[10px] font-bold mt-0.5">
+                                        <h3 className="text-[14px] font-bold text-white">Action Report Preview</h3>
+                                        <p className="text-[#2563eb] text-[10px] font-bold mt-0.5">
                                             {loading && !reportData ? (
                                                 <span className="flex items-center gap-1.5">
                                                     <Loader2 className="animate-spin" size={10} />
                                                     Checking database...
                                                 </span>
                                             ) : (
-                                                `${reportData?.total || 0} reservations found`
+                                                `${reportData?.total || 0} actions found`
                                             )}
                                         </p>
                                     </div>
@@ -912,7 +949,7 @@ export default function BookingsReportPage() {
                                         placeholder="Search results..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-amber-500/50"
+                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] pl-9 pr-4 py-2.5 text-[11px] placeholder-zinc-500 text-white font-semibold focus:outline-none focus:border-blue-500/50"
                                     />
                                     <Search size={12} className="absolute left-3 top-3.5 text-zinc-500" />
                                 </div>
@@ -923,22 +960,22 @@ export default function BookingsReportPage() {
                                 {loading && (
                                     <div className="no-print absolute inset-0 bg-[#0f0f0f]/80 backdrop-blur-[2px] flex items-center justify-center z-10">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-[#f59e0b]" size={32} />
+                                            <Loader2 className="animate-spin text-[#2563eb]" size={32} />
                                             <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">Syncing records...</span>
                                         </div>
                                     </div>
                                 )}
 
                                 <table className="w-full border-collapse text-left">
-                                    {/* Warm Deep Bronze Header matching custom preview design */}
-                                    <thead className="bg-[#20150e] border-b border-[#f59e0b]/10 sticky top-0 z-1">
+                                    {/* Warm Navy Header matching preview design */}
+                                    <thead className="bg-[#0b1b36] border-b border-[#2563eb]/10 sticky top-0 z-1">
                                         <tr>
                                             {selectedColumns.map((colKey) => (
                                                 <th
                                                     key={colKey}
-                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#281c12]"
+                                                    className="px-6 py-4 text-[9px] font-black tracking-wider text-zinc-300 uppercase select-none border-b border-[#0f2144]"
                                                 >
-                                                    {metadata?.columns[colKey]?.label || colKey}
+                                                    {getColInfo(colKey).label === "created_at" ? "Created At" : getColInfo(colKey).label}
                                                 </th>
                                             ))}
                                         </tr>
@@ -952,20 +989,20 @@ export default function BookingsReportPage() {
                                                 >
                                                     {selectedColumns.map((colKey) => {
                                                         const val = row[colKey];
-                                                        const isDate = metadata?.dateColumns?.includes(colKey);
+                                                        const isDate = metadata?.dateColumns?.includes(colKey) || colKey === "created_at";
 
-                                                        // Customer name column gets initials avatar bubble
-                                                        if (colKey === "customer_name") {
-                                                            const nameStr = String(val || "-");
+                                                        // Guest name column gets initials avatar bubble
+                                                        if (colKey === "guest_name") {
+                                                            const nameStr = val ? String(val) : "—";
                                                             return (
                                                                 <td key={colKey} className="px-6 py-4 border-b border-[#161616]">
                                                                     <div className="flex items-center gap-3">
                                                                         <div
                                                                             className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${getAvatarStyle(
-                                                                                nameStr
+                                                                                val
                                                                             )}`}
                                                                         >
-                                                                            {getInitials(nameStr)}
+                                                                            {getInitials(val)}
                                                                         </div>
                                                                         <span className="font-bold text-white">{nameStr}</span>
                                                                     </div>
@@ -973,14 +1010,42 @@ export default function BookingsReportPage() {
                                                             );
                                                         }
 
+                                                        // Display request type mapped text
+                                                        if (colKey === "request_type") {
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold">
+                                                                    {mapRequestType(String(val))}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Notes formatting (faint, formatted whitespace)
+                                                        if (colKey === "notes") {
+                                                            const notesText = String(val || "").trim();
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-400 font-medium max-w-[340px] break-words whitespace-pre-line leading-relaxed">
+                                                                    {notesText ? notesText : "—"}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Comments / Resolution notes formatting
+                                                        if (colKey === "comments" || colKey === "resolution_notes") {
+                                                            const text = String(val || "").trim();
+                                                            return (
+                                                                <td key={colKey} className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold max-w-[280px] break-words whitespace-pre-line leading-relaxed">
+                                                                    {text ? text : "—"}
+                                                                </td>
+                                                            );
+                                                        }
+
+                                                        // Default text fallback formatting
                                                         return (
                                                             <td
                                                                 key={colKey}
-                                                                className={`px-6 py-4 border-b border-[#161616] ${
-                                                                    colKey === "covers" ? "font-bold text-[#f59e0b]" : "text-zinc-300 font-semibold"
-                                                                }`}
+                                                                className="px-6 py-4 border-b border-[#161616] text-zinc-300 font-semibold"
                                                             >
-                                                                {isDate ? formatDate(String(val)) : String(val === undefined || val === null ? "-" : val)}
+                                                                {isDate ? formatDateTime(String(val)) : String(val === undefined || val === null ? "—" : val)}
                                                             </td>
                                                         );
                                                     })}
@@ -992,7 +1057,7 @@ export default function BookingsReportPage() {
                                                     colSpan={selectedColumns.length || 1}
                                                     className="px-6 py-12 text-center text-zinc-500 font-medium italic"
                                                 >
-                                                    {!loading && "No matching reservations found."}
+                                                    {!loading && "No matching actions found."}
                                                 </td>
                                             </tr>
                                         )}
@@ -1012,7 +1077,7 @@ export default function BookingsReportPage() {
                                         <span className="text-white">
                                             {(page - 1) * pageSize + reportData.data.length}
                                         </span>{" "}
-                                        of <span className="text-[#f59e0b] font-black">{reportData.total}</span> results
+                                        of <span className="text-[#2563eb] font-black">{reportData.total}</span> results
                                     </div>
 
                                     {/* Rows Count Page Selector */}
@@ -1028,7 +1093,7 @@ export default function BookingsReportPage() {
                                                     }}
                                                     className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-black transition-all ${
                                                         pageSize === size
-                                                            ? "bg-[#f59e0b] text-black"
+                                                            ? "bg-[#2563eb] text-black"
                                                             : "bg-[#161616] text-zinc-400 hover:text-zinc-200 border border-[#232323]"
                                                     }`}
                                                 >
@@ -1058,7 +1123,7 @@ export default function BookingsReportPage() {
                                                         onClick={() => !isDots && setPage(Number(pNum))}
                                                         className={`w-6 h-6 rounded flex items-center justify-center transition-all ${
                                                             active
-                                                                ? "bg-[#f59e0b] text-black font-extrabold"
+                                                                ? "bg-[#2563eb] text-black font-extrabold"
                                                                 : isDots
                                                                 ? "text-zinc-600 bg-transparent font-normal cursor-default"
                                                                 : "bg-[#161616] border border-[#232323] text-zinc-400 hover:text-zinc-200 hover:border-[#333]"
