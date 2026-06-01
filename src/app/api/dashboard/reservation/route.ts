@@ -29,18 +29,12 @@ function extractCsrfFromCookies(cookieHeader: string): string | null {
 
 export async function POST(request: Request) {
   try {
-    const cookieHeader = request.headers.get("cookie") || "";
-    const authHeader = request.headers.get("authorization") || "";
-    const contentType = request.headers.get("content-type") || "application/json";
-    const clientCsrfHeader = request.headers.get("x-csrf-token") || "";
+    const body = await request.json();
 
-    // Parse the request body
-    let body: unknown = {};
-    try {
-      body = await request.json();
-    } catch {
-      // Empty or non-JSON body is fine
-    }
+    const authHeader = request.headers.get("authorization") || "";
+    const clientCsrfHeader = request.headers.get("x-csrf-token") || "";
+    const cookieHeader = request.headers.get("cookie") || "";
+    const contentType = request.headers.get("content-type") || "application/json";
 
     // Step 1: Try to get a fresh CSRF token from the backend via a GET request.
     // This works because the backend sends the CSRF token in the response cookies.
@@ -110,11 +104,15 @@ export async function POST(request: Request) {
 
     // Step 3: Make the actual POST to the backend
     const response = await axios.post(
-      `${BACKEND_BASE}/api/dashboard/reservation`,
+      "https://voice.huemanai.co.uk/api/dashboard/reservation",
       body,
       {
-        headers: postHeaders,
-        validateStatus: () => true,
+        headers: {
+          Authorization: authHeader,
+          "X-CSRF-TOKEN": csrfToken,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -135,12 +133,19 @@ export async function POST(request: Request) {
       status: response.status,
       headers: responseHeaders,
     });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error in dashboard reservation API proxy:", message);
+  } catch (error: any) {
+    console.log(
+      "DASHBOARD API ERROR =>",
+      error?.response?.data || error.message
+    );
+
     return NextResponse.json(
-      { error: "Internal Server Error in API Proxy", details: message },
-      { status: 500 }
+      error?.response?.data || {
+        message: "Something went wrong",
+      },
+      {
+        status: error?.response?.status || 500,
+      }
     );
   }
 }

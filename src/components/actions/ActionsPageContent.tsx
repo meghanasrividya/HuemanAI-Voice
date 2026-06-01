@@ -238,21 +238,21 @@ export default function ActionsPageContent() {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input placeholder="Search by guest name or phone..." value={search} onChange={e => onSearchChange(e.target.value)} className="h-10 pl-10" />
                 </div>
-                <Select value={status || "all"} onValueChange={v => { setStatus(v === "all" ? "" : v); setPage(1); }}>
+                <Select value={status || "all"} onValueChange={(v: string) => { setStatus(v === "all" ? "" : v); setPage(1); }}>
                     <SelectTrigger className="h-10 sm:w-[140px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Statuses</SelectItem>
                         {Object.keys(ACTION_STATUS_LABELS).map(k => <SelectItem key={k} value={k}>{(ACTION_STATUS_LABELS as any)[k]}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                <Select value={type || "all"} onValueChange={v => { setType(v === "all" ? "" : v); setPage(1); }}>
+                <Select value={type || "all"} onValueChange={(v: string) => { setType(v === "all" ? "" : v); setPage(1); }}>
                     <SelectTrigger className="h-10 sm:w-[140px]"><SelectValue placeholder="All Types" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
                         {Object.keys(ACTION_REQUEST_TYPE_LABELS).map(k => <SelectItem key={k} value={k}>{(ACTION_REQUEST_TYPE_LABELS as any)[k]}</SelectItem>)}
                     </SelectContent>
                 </Select>
-                <Select value={priority || "all"} onValueChange={v => { setPriority(v === "all" ? "" : v); setPage(1); }}>
+                <Select value={priority || "all"} onValueChange={(v: string) => { setPriority(v === "all" ? "" : v); setPage(1); }}>
                     <SelectTrigger className="h-10 sm:w-[120px]"><SelectValue placeholder="All Priorities" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Priorities</SelectItem>
@@ -261,7 +261,7 @@ export default function ActionsPageContent() {
                         <SelectItem value="low">Low</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={sortBy} onValueChange={v => { setSortBy(v); setPage(1); }}>
+                <Select value={sortBy} onValueChange={(v: string) => { setSortBy(v); setPage(1); }}>
                     <SelectTrigger className="h-10 sm:w-[120px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="due_at">Due Date</SelectItem>
@@ -270,7 +270,7 @@ export default function ActionsPageContent() {
                         <SelectItem value="status">Status</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={sortOrder} onValueChange={v => { setSortOrder(v); setPage(1); }}>
+                <Select value={sortOrder} onValueChange={(v: string) => { setSortOrder(v); setPage(1); }}>
                     <SelectTrigger className="h-10 sm:w-[120px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="asc">Ascending</SelectItem>
@@ -374,7 +374,7 @@ export default function ActionsPageContent() {
             )}
 
             {/* Resolve dialog */}
-            <Dialog open={resolveId !== null} onOpenChange={open => !open && setResolveId(null)}>
+            <Dialog open={resolveId !== null} onOpenChange={(open: boolean) => !open && setResolveId(null)}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle>Resolve Action</DialogTitle>

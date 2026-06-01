@@ -1,8 +1,92 @@
 @import "tailwindcss";
 
+/* ── Light mode (default) ── */
 :root {
-  --background: #050505;
-  --foreground: #ffffff;
+  --background: 0 0% 98%;
+  --foreground: 240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+  --primary: 22 94% 52%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 5% 95%;
+  --secondary-foreground: 240 10% 4%;
+  --muted: 240 5% 95%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 240 5% 95%;
+  --accent-foreground: 240 10% 4%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 22 94% 52%;
+  --radius: 0.75rem;
+}
+
+/* ── Dark mode ── */
+.dark {
+  --background: 0 0% 2%;
+  --foreground: 0 0% 98%;
+  --card: 240 4% 5%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 4% 5%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 22 94% 52%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4% 11%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 4% 11%;
+  --muted-foreground: 240 4% 65%;
+  --accent: 240 4% 16%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3% 14%;
+  --input: 240 4% 11%;
+  --ring: 22 94% 52%;
+  --radius: 0.75rem;
+}
+
+/* ── Custom animations ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes movable-glow {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(3%, 4%) scale(1.04); }
+  50%  { transform: translate(-2%, 6%) scale(0.97); }
+  75%  { transform: translate(-4%, -3%) scale(1.03); }
+  100% { transform: translate(2%, -5%) scale(1); }
+}
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes text-glow-move {
+  0%   { transform: translate(-50%, -50%) scale(1);    opacity: 0.7; }
+  33%  { transform: translate(-48%, -54%) scale(1.06); opacity: 0.9; }
+  66%  { transform: translate(-52%, -46%) scale(0.96); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 0.7; }
+}
+
+@theme inline {
+  --animate-fade-in: fade-in 0.7s ease-out both;
+  --animate-movable-glow: movable-glow 10s ease-in-out infinite alternate;
+  --animate-scroll: scroll 35s linear infinite;
+  --animate-text-glow-move: text-glow-move 7s ease-in-out infinite;
+}
+
+@utility shadow-premium-sm {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+}
+
+@utility shadow-premium {
+  box-shadow: 0 4px 16px 0 rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
 }
 
 @theme inline {
@@ -32,10 +116,7 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-html:not(.dark) {
-  --background: #fbfbfb;
-  --foreground: #09090b;
-}
+/* Light mode already defined in :root above */
 
 body {
   background: var(--background);
@@ -285,4 +366,35 @@ html:not(.dark) .admin-toggle-dot[data-active="false"] {
 .custom-scrollbar {
   scrollbar-width: auto;
   scrollbar-color: #8e8e93 #070709;
+  scrollbar-color: #2a2a2a #0a0a0a;
+  scrollbar-width: thin;
+}
+
+/* Dark scrollbar - webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-corner {
+  background: #0a0a0a;
 }

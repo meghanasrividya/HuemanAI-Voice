@@ -146,7 +146,7 @@ export default function WhatsappDashboard() {
                     )
                     .filter(Boolean)
             )
-        ).sort() as string[];
+        ).sort() as string[]);
     }, [conversations]);
 
     /*
@@ -228,7 +228,7 @@ export default function WhatsappDashboard() {
                     <Select
                         value={sortOrder}
                         onValueChange={(
-                            value
+                            value: any
                         ) =>
                             setSortOrder(
                                 value as SortOrder

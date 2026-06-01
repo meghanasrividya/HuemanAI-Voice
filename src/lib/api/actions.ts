@@ -5,8 +5,8 @@ export async function fetchActionHotels() {
     return response.data;
 }
 
-export async function fetchActionStats() {
-    const response = await apiClient.post("/actions/stats");
+export async function fetchActionStats(params?: Record<string, unknown>) {
+    const response = await apiClient.post("/actions/stats", params);
     return response.data;
 }
 
@@ -51,3 +51,12 @@ export async function fetchAdminSettings() {
     const response = await apiClient.get("/admin/settings");
     return response.data;
 }
+
+export const actionsApi = {
+    getList: fetchActionsList,
+    getAction: fetchActionById,
+    getStats: fetchActionStats,
+    getHotels: fetchActionHotels,
+    updateAction,
+    createAction,
+};

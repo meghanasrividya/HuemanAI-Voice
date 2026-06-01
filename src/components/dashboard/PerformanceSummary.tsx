@@ -108,11 +108,11 @@ export default function PerformanceSummary({
                         display =
                             formatDuration(raw);
                     } else if (
-                        "suffix" in item && item.suffix
+                        (item as any).suffix
                     ) {
                         display = `${raw.toFixed(
                             1
-                        )}${(item as { suffix: string }).suffix}`;
+                        )}${(item as any).suffix}`;
                     } else {
                         display =
                             raw.toFixed(2);

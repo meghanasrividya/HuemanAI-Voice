@@ -1,13 +1,9 @@
-import { ReactNode } from "react";
+import * as React from "react";
 
-type Props = {
-    children: ReactNode;
-};
-
-export default function PageContainer({ children }: Props) {
-    return (
-        <div className="w-full h-full min-h-screen bg-background text-foreground">
-            {children}
-        </div>
-    );
+export default function PageContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-full min-h-full flex flex-col">
+      {children}
+    </div>
+  );
 }

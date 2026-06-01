@@ -11,6 +11,7 @@ import {
   Search,
   Shield,
 } from "lucide-react";
+import HomeHeader from "./HomeHeader";
 
 function FeatureCard({
   icon,
@@ -38,9 +39,6 @@ function FeatureCard({
 }
 
 export default function Home() {
-  const userName: string | null = null;
-  const isLoggedIn = Boolean(userName);
-
   return (
     <div className="min-h-dvh bg-[#050505] text-white selection:bg-white/10">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -133,28 +131,7 @@ export default function Home() {
         ))}
       </div>
 
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-black/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-10">
-          <div className="text-[42px] font-semibold leading-none tracking-tight text-white">
-            HuëmanAI
-          </div>
-
-          {isLoggedIn ? (
-            <div className="flex items-center gap-14 text-base">
-              <span className="text-white/60">
-                Welcome, <span className="text-white/80">{userName}</span>
-              </span>
-              <Link href="/dashboard" className="font-semibold text-white">
-                Dashboard
-              </Link>
-            </div>
-          ) : (
-            <Link href="/login" className="text-base font-semibold text-white">
-              Login
-            </Link>
-          )}
-        </div>
-      </header>
+      <HomeHeader />
 
       <main className="relative z-10">
         <section className="relative flex min-h-dvh items-center justify-center px-4 pt-20">
@@ -193,10 +170,10 @@ export default function Home() {
 
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link
-                  href="/login"
+                  href="/dashboard"
                   className="group inline-flex h-12 items-center justify-center rounded-md border border-white/10 bg-[#f3d7c7] px-8 text-base font-medium text-black shadow-lg transition-all hover:shadow-xl hover:scale-105"
                 >
-                  Login to Dashboard
+                  Go to Dashboard
                   <ArrowRight className="ml-2 h-4 w-4 text-black" />
                 </Link>
                 <Link
@@ -531,7 +508,6 @@ export default function Home() {
             <p className="mt-8 max-w-md text-sm leading-relaxed text-white/55">
               AI-powered voice automation for the hospitality industry.
               <br />
-              <span className="text-white/40">by FNA Technology LLP</span>
             </p>
           </div>
 
