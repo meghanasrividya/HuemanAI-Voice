@@ -60,6 +60,14 @@ export function DropdownMenuTrigger({
                 (children.props as React.HTMLAttributes<HTMLElement>).onClick?.(e);
                 setOpen(!open);
             },
+            onMouseDown: (e: React.MouseEvent<HTMLElement>) => {
+                e.stopPropagation();
+                (children.props as React.HTMLAttributes<HTMLElement>).onMouseDown?.(e);
+            },
+            onTouchStart: (e: React.TouchEvent<HTMLElement>) => {
+                e.stopPropagation();
+                (children.props as React.HTMLAttributes<HTMLElement>).onTouchStart?.(e);
+            }
         });
     }
 
@@ -67,6 +75,8 @@ export function DropdownMenuTrigger({
         <button
             type="button"
             onClick={() => setOpen(!open)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
         >
             {children}
         </button>
