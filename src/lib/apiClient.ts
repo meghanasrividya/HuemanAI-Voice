@@ -1,69 +1,49 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
-function getCsrfToken(): string | null {
-    if (typeof document === "undefined") return null;
-    try {
-        const match = document.cookie
-            .split(";")
-            .find((c) => c.trim().startsWith("XSRF-TOKEN="));
-        if (!match) return null;
-        return decodeURIComponent(match.split("=")[1]);
-    } catch {
-        return null;
-    }
-}
+const configuredApiBase =
+    process.env.NEXT_PUBLIC_API_URL?.trim();
 
 export const apiClient = axios.create({
     baseURL:
-        process.env.NEXT_PUBLIC_API_URL ||
-        "https://voice.huemanai.co.uk/api",
+        configuredApiBase && configuredApiBase.length > 0
+            ? configuredApiBase
+            : "/api",
+
     withCredentials: true,
 });
-
-const PUBLIC_AUTH_PATHS = [
-    "/user/login",
-    "/user/register",
-    "/user/forgot-password",
-    "/user/reset-password",
-];
-
 apiClient.interceptors.request.use((config) => {
-    const token = useAuthStore.getState().token;
-    const isPublicAuth = PUBLIC_AUTH_PATHS.some((path) =>
-        config.url?.includes(path)
-    );
+    let token = "";
+    if (typeof window !== "undefined") {
+        token = useAuthStore.getState().token || "";
+        if (!token) {
+            const rawToken = localStorage.getItem("access_token") || "";
+            token = rawToken.replace("Bearer ", "");
+        }
+        const csrfToken = localStorage.getItem("csrf_token");
 
-    if (token && !isPublicAuth) {
+        if (csrfToken) {
+            config.headers["X-CSRF-TOKEN"] = csrfToken;
+        }
+    }
+
+    if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
 
-    const method = config.method?.toLowerCase() || "";
-    if (["post", "put", "delete", "patch"].includes(method)) {
-        const csrf = getCsrfToken();
-        if (csrf) {
-            config.headers["X-CSRF-Token"] = csrf;
-        }
+    config.headers.Accept = "application/json";
+    if (!(config.data instanceof FormData)) {
+        config.headers["Content-Type"] = "application/json";
     }
 
     return config;
+}, (error) => {
+    return Promise.reject(error);
 });
 
-apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        const status = error.response?.status;
-        if (status === 401 && typeof window !== "undefined") {
-            useAuthStore.getState().logout();
-            const path = window.location.pathname;
-            const onAuthPage = ["/login", "/forgot-password", "/reset-password", "/register"].some(
-                (p) => path === p || path.startsWith(`${p}/`)
-            );
-            if (!onAuthPage) {
-                const returnUrl = encodeURIComponent(path + window.location.search);
-                window.location.href = `/login?returnUrl=${returnUrl}`;
-            }
-        }
-        return Promise.reject(error);
+apiClient.interceptors.response.use((response) => {
+    if (typeof window !== "undefined" && response.data && response.data._csrf) {
+        localStorage.setItem("csrf_token", response.data._csrf);
     }
-);
+    return response;
+});

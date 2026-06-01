@@ -1,104 +1,83 @@
-"use client";
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
-
-interface PopoverContextValue {
-    open: boolean;
-    setOpen: (open: boolean) => void;
+type PopoverContextType = {
+  open: boolean
+  setOpen: (open: boolean) => void
 }
 
-const PopoverContext = React.createContext<PopoverContextValue>({
-    open: false,
-    setOpen: () => {},
-});
+const PopoverContext = React.createContext<PopoverContextType | undefined>(undefined)
 
-function Popover({
-    children,
-    open: controlledOpen,
-    onOpenChange,
+export function Popover({
+  children,
+  open,
+  onOpenChange,
 }: {
-    children: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: React.Dispatch<React.SetStateAction<boolean>>;
+  children: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-    const [internalOpen, setInternalOpen] = React.useState(false);
-    const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
-    const setOpen = (value: boolean) => {
-        setInternalOpen(value);
-        onOpenChange?.(value);
-    };
-    return (
-        <PopoverContext.Provider value={{ open, setOpen }}>
-            <div className="relative inline-block">{children}</div>
-        </PopoverContext.Provider>
-    );
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : internalOpen
+  const setOpen = isControlled ? onOpenChange! : setInternalOpen
+
+  return (
+    <PopoverContext.Provider value={{ open: isOpen, setOpen }}>
+      <div className="relative inline-block">{children}</div>
+    </PopoverContext.Provider>
+  )
 }
 
-function PopoverTrigger({
-    children,
-    asChild,
+export function PopoverTrigger({
+  children,
+  asChild,
 }: {
-    children: React.ReactNode;
-    asChild?: boolean;
+  children: React.ReactNode
+  asChild?: boolean
 }) {
-    const { setOpen, open } = React.useContext(PopoverContext);
-    if (asChild && React.isValidElement(children)) {
-        return React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
-            onClick: (e: React.MouseEvent) => {
-                e.stopPropagation();
-                setOpen(!open);
-            },
-        });
+  const context = React.useContext(PopoverContext)
+  if (!context) throw new Error("PopoverTrigger must be used within a Popover")
+
+  return React.cloneElement(children as React.ReactElement<any>, {
+    onClick: (e: any) => {
+      context.setOpen(!context.open)
+      if ((children as any).props.onClick) {
+        (children as any).props.onClick(e)
+      }
     }
-    return (
-        <button type="button" onClick={() => setOpen(!open)}>
-            {children}
-        </button>
-    );
+  })
 }
 
-function PopoverContent({
-    children,
-    className,
-    align = "center",
-    sideOffset = 4,
-    ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-    align?: "start" | "center" | "end";
-    sideOffset?: number;
-}) {
-    const { open, setOpen } = React.useContext(PopoverContext);
-    const ref = React.useRef<HTMLDivElement>(null);
+export function PopoverContent({
+  className,
+  children,
+  align = "center",
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { align?: "start" | "center" | "end" }) {
+  const context = React.useContext(PopoverContext)
+  if (!context) throw new Error("PopoverContent must be used within a Popover")
+  if (!context.open) return null
 
-    React.useEffect(() => {
-        function handleOutside(e: MouseEvent) {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
-        }
-        if (open) document.addEventListener("mousedown", handleOutside);
-        return () => document.removeEventListener("mousedown", handleOutside);
-    }, [open, setOpen]);
+  const alignStyles = {
+    start: "left-0",
+    center: "left-1/2 -translate-x-1/2",
+    end: "right-0",
+  }
 
-    if (!open) return null;
-
-    const alignClass = align === "start" ? "left-0" : align === "end" ? "right-0" : "left-1/2 -translate-x-1/2";
-
-    return (
-        <div
-            ref={ref}
-            className={cn(
-                "absolute z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
-                alignClass,
-                className
-            )}
-            style={{ top: `calc(100% + ${sideOffset}px)` }}
-            {...props}
-        >
-            {children}
-        </div>
-    );
+  return (
+    <>
+      <div className="fixed inset-0 z-50" onClick={() => context.setOpen(false)} />
+      <div
+        className={cn(
+          "absolute z-50 overflow-hidden rounded-md border border-zinc-800 bg-[#0c0c0e] text-foreground shadow-md animate-in fade-in-80 slide-in-from-top-1 mt-2",
+          alignStyles[align],
+          className
+        )}
+        {...props}
+      >
+        <div className="p-2">{children}</div>
+      </div>
+    </>
+  )
 }
-
-export { Popover, PopoverTrigger, PopoverContent };

@@ -1,7 +1,13 @@
-"use client";
-
 import { ReactNode } from "react";
 
-export default function PageContainer({ children }: { children: ReactNode }) {
-    return <div className="flex flex-col flex-1 min-h-0">{children}</div>;
+type Props = {
+    children: ReactNode;
+};
+
+export default function PageContainer({ children }: Props) {
+    return (
+        <div className="w-full h-full min-h-screen bg-background text-foreground">
+            {children}
+        </div>
+    );
 }

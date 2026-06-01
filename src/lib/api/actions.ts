@@ -1,53 +1,53 @@
 import { apiClient } from "@/lib/apiClient";
 
-export const actionsApi = {
-    async getList(params: Record<string, any>) {
-        const response = await apiClient.get("/actions", { params });
-        return response.data;
-    },
+export async function fetchActionHotels() {
+    const response = await apiClient.get("/actions/hotels");
+    return response.data;
+}
 
-    async getAction(id: string) {
-        const response = await apiClient.get(`/actions/${id}`);
-        return response.data;
-    },
+export async function fetchActionStats() {
+    const response = await apiClient.post("/actions/stats");
+    return response.data;
+}
 
-    async updateAction(id: string, data: Record<string, any>) {
-        const response = await apiClient.patch(`/actions/${id}`, data);
-        return response.data;
-    },
+export async function fetchActionsList(payload: any) {
+  const response = await apiClient.post("/actions/list", payload);
+  return response.data;
+}
 
-    async createAction(data: Record<string, any>) {
-        const response = await apiClient.post("/actions", data);
-        return response.data;
-    },
+export async function fetchActions(params?: any) {
+    const response = await apiClient.get("/actions", {
+        params,
+    });
+    return response.data;
+}
 
-    async getStats(params?: Record<string, any>) {
-        const response = await apiClient.get("/actions/stats", { params });
-        return response.data;
-    },
+export async function fetchActionById(actionId: string) {
+    const response = await apiClient.get(`/actions/${actionId}`);
+    return response.data;
+}
 
-    async getHotels() {
-        const response = await apiClient.get("/actions/hotels");
-        return response.data;
-    },
+export async function createAction(data: any) {
+    const response = await apiClient.post("/actions/create", data);
+    return response.data;
+}
 
-    async decryptNumber(id: string | number) {
-        const response = await apiClient.get(`/actions/${id}/decrypt-number`);
-        return response.data;
-    },
+export async function decryptPhoneNumber(actionId: string) {
+    const response = await apiClient.get(`/actions/${actionId}/decrypt-number`);
+    return response.data;
+}
 
-    async getVapidPublicKey() {
-        const response = await apiClient.get("/push/vapid-public-key");
-        return response.data?.key;
-    },
+export async function updateAction(actionId: string, data: any) {
+    const response = await apiClient.put(`/actions/${actionId}`, data);
+    return response.data;
+}
 
-    async subscribePush(payload: { endpoint: string; keys: { p256dh: string; auth: string }; browser: string }) {
-        const response = await apiClient.post("/push/subscribe", payload);
-        return response.data;
-    },
+export async function deleteAction(actionId: string) {
+    const response = await apiClient.delete(`/actions/${actionId}`);
+    return response.data;
+}
 
-    async unsubscribePush(endpoint: string) {
-        const response = await apiClient.post("/push/unsubscribe", { endpoint });
-        return response.data;
-    },
-};
+export async function fetchAdminSettings() {
+    const response = await apiClient.get("/admin/settings");
+    return response.data;
+}

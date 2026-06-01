@@ -6,7 +6,7 @@ import {
     DEFAULT_DISPLAY_TIMEZONE,
     formatDateInTimezone,
     parseTimestampAsUtc,
-} from "@/lib/date";
+} from "@/lib/date/dateUtils";
 
 type Props = {
     criticalFinding: string;

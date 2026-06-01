@@ -1,26 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+  --background: #050505;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -50,92 +32,257 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
+html:not(.dark) {
+  --background: #fbfbfb;
+  --foreground: #09090b;
 }
 
 body {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s, color 0.2s;
+}
+/* --- Global Light Mode Overrides when html does not have .dark --- */
+html:not(.dark) .bg-\[\#050505\],
+html:not(.dark) .bg-black,
+html:not(.dark) .bg-\[\#070709\] {
+  background-color: #fbfbfb !important;
 }
 
-@keyframes movable-glow {
-  0% {
-    transform: translate3d(-8px, -6px, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(10px, 8px, 0) scale(1.04);
-  }
-  100% {
-    transform: translate3d(-8px, -6px, 0) scale(1);
-  }
+html:not(.dark) .bg-\[\#0C0C0E\],
+html:not(.dark) .bg-\[\#0B0B0D\],
+html:not(.dark) .bg-\[\#0C0C0F\],
+html:not(.dark) .bg-white\/5 {
+  background-color: #ffffff !important;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+html:not(.dark) .bg-\[\#050507\],
+html:not(.dark) .bg-\[\#0A0A0C\],
+html:not(.dark) .bg-\[\#101118\] {
+  background-color: #f4f4f5 !important;
 }
 
-@keyframes text-glow-move {
-  0% {
-    transform: translate3d(-50%, -50%, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-50%, -50%, 0) scale(1.04);
-  }
-  100% {
-    transform: translate3d(-50%, -50%, 0) scale(1);
-  }
+html:not(.dark) .bg-\[\#1D1D22\],
+html:not(.dark) .bg-zinc-800 {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
 }
 
-@keyframes scroll-x {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
+/* Sidebar user block avatar fallback & Role Badge */
+html:not(.dark) .bg-\[\#18181b\],
+html:not(.dark) .bg-\[\#18181B\] {
+  background-color: #e4e4e7 !important;
+  color: #18181b !important;
 }
 
-.animate-movable-glow {
-  animation: movable-glow 12s ease-in-out infinite;
+/* Text overrides */
+html:not(.dark) .text-white {
+  color: #09090b !important;
 }
 
-.animate-fade-in {
-  animation: fade-in 600ms ease-out both;
+html:not(.dark) .text-zinc-350,
+html:not(.dark) .text-zinc-300,
+html:not(.dark) .text-zinc-200 {
+  color: #18181b !important;
 }
 
-.animate-text-glow-move {
-  animation: text-glow-move 8s ease-in-out infinite;
+html:not(.dark) .text-zinc-400,
+html:not(.dark) .text-zinc-500 {
+  color: #71717a !important;
 }
 
-.animate-scroll {
-  animation: scroll-x 18s linear infinite;
+html:not(.dark) .text-zinc-600 {
+  color: #a1a1aa !important;
+}
+
+/* Borders */
+html:not(.dark) .border-zinc-900,
+html:not(.dark) .border-\[\#1E1E24\],
+html:not(.dark) .border-\[\#232327\],
+html:not(.dark) .border-\[\#29292F\],
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-850 {
+  border-color: #e4e4e7 !important;
+}
+
+/* Card and container shadows for light mode */
+html:not(.dark) .rounded-3xl,
+html:not(.dark) .rounded-2xl {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+.section-heading-gradient {
+  background: linear-gradient(to right, #0d9488, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* Light mode overrides for background colors */
+html:not(.dark) .bg-\[\#0c0c0e\],
+html:not(.dark) .bg-\[\#0C0C0E\],
+html:not(.dark) .bg-\[\#0b0b0d\],
+html:not(.dark) .bg-\[\#0B0B0D\],
+html:not(.dark) .bg-\[\#0c0c0f\],
+html:not(.dark) .bg-\[\#0C0C0F\],
+html:not(.dark) .bg-\[\#0a0a0a\],
+html:not(.dark) .bg-\[\#0A0A0A\],
+html:not(.dark) .bg-\[\#08080a\],
+html:not(.dark) .bg-\[\#08080A\],
+html:not(.dark) .bg-\[\#101014\],
+html:not(.dark) .bg-\[\#101014\],
+html:not(.dark) .bg-white\/5 {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-\[\#050507\],
+html:not(.dark) .bg-\[\#0a0a0c\],
+html:not(.dark) .bg-\[\#0A0A0C\],
+html:not(.dark) .bg-\[\#101118\],
+html:not(.dark) .bg-\[\#141416\] {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) .bg-\[\#1d1d22\],
+html:not(.dark) .bg-\[\#1D1D22\],
+html:not(.dark) .bg-zinc-800,
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-900\/40,
+html:not(.dark) .bg-zinc-900\/20,
+html:not(.dark) .bg-zinc-900\/50,
+html:not(.dark) .bg-\[\#18181b\]\/50,
+html:not(.dark) .bg-\[\#18181B\]\/50 {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+html:not(.dark) .bg-\[\#1b0b0e\]\/35,
+html:not(.dark) .bg-\[\#1B0B0E\]\/35 {
+  background-color: #fee2e2 !important; /* Overdue row light red background */
+}
+
+/* Light mode overrides for hovers */
+html:not(.dark) .hover\:bg-white\/5:hover,
+html:not(.dark) .hover\:bg-zinc-900\/50:hover,
+html:not(.dark) .hover\:bg-zinc-900\/40:hover,
+html:not(.dark) .hover\:bg-\[\#1f1f24\]:hover,
+html:not(.dark) .hover\:bg-\[\#1F1F24\]:hover,
+html:not(.dark) .hover\:bg-\[\#0c0c0e\]:hover,
+html:not(.dark) .hover\:bg-\[\#0C0C0E\]:hover,
+html:not(.dark) .hover\:bg-\[\#1a1a20\]:hover,
+html:not(.dark) .hover\:bg-\[\#1A1A20\]:hover {
+  background-color: #e4e4e7 !important;
+}
+
+/* Light mode overrides for border colors */
+html:not(.dark) .border-zinc-900,
+html:not(.dark) .border-\[\#1e1e24\],
+html:not(.dark) .border-\[\#1E1E24\],
+html:not(.dark) .border-\[\#232327\],
+html:not(.dark) .border-\[\#29292f\],
+html:not(.dark) .border-\[\#29292F\],
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-850,
+html:not(.dark) .border-zinc-800\/80,
+html:not(.dark) .border-\[\#2a2a30\],
+html:not(.dark) .border-\[\#2A2A30\] {
+  border-color: #e4e4e7 !important;
+}
+
+/* Custom Select in Admin Page */
+.admin-select-button {
+  background-color: #050507 !important;
+  border: 1px solid #232327 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .admin-select-button {
+  background-color: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+.admin-select-dropdown {
+  background-color: #101014 !important;
+  border: 1px solid #2a2a30 !important;
+}
+html:not(.dark) .admin-select-dropdown {
+  background-color: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+}
+
+.admin-select-option {
+  background-color: transparent !important;
+  color: #d4d4d8 !important;
+}
+.admin-select-option[data-selected="true"] {
+  background-color: #1a1a22 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) .admin-select-option {
+  background-color: transparent !important;
+  color: #71717a !important;
+}
+html:not(.dark) .admin-select-option[data-selected="true"] {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+/* Custom Toggle in Admin Page */
+.admin-toggle-button[data-active="true"] {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .admin-toggle-button[data-active="true"] {
+  background-color: #09090b !important;
+}
+
+.admin-toggle-button[data-active="false"] {
+  background-color: #3f3f46 !important;
+}
+html:not(.dark) .admin-toggle-button[data-active="false"] {
+  background-color: #e4e4e7 !important;
+}
+
+.admin-toggle-dot[data-active="true"] {
+  background-color: #0c0c0f !important;
+}
+html:not(.dark) .admin-toggle-dot[data-active="true"] {
+  background-color: #ffffff !important;
+}
+
+.admin-toggle-dot[data-active="false"] {
+  background-color: #a1a1aa !important;
+}
+html:not(.dark) .admin-toggle-dot[data-active="false"] {
+  background-color: #ffffff !important;
+}
+
+/* Ensure that any text intended for selection displays the I-Beam cursor */
+.select-text,
+.cursor-text {
+  cursor: text !important;
+}
+
+/* Custom premium scrollbar utility matching dark mockup aesthetics */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 14px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #070709;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #8e8e93;
+  border-radius: 9999px;
+  border: 4px solid #070709;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #a1a1aa;
+}
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+.custom-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #8e8e93 #070709;
 }

@@ -146,7 +146,7 @@ export default function WhatsappDashboard() {
                     )
                     .filter(Boolean)
             )
-        ) as string[]).sort();
+        ).sort() as string[];
     }, [conversations]);
 
     /*

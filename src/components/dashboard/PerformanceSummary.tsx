@@ -34,7 +34,15 @@ function formatDuration(
     return `${mins}m ${secs}s`;
 }
 
-const items = [
+interface PerformanceItem {
+    key: "answeredRate" | "avgResponseTime" | "escalationRate" | "satisfactionScore";
+    label: string;
+    icon: React.ElementType;
+    color: string;
+    suffix?: string;
+}
+
+const items: PerformanceItem[] = [
     {
         key: "answeredRate",
         label: "Answered Rate",
@@ -64,7 +72,7 @@ const items = [
         icon: TrendingUp,
         color: "text-purple-500",
     },
-] as const;
+];
 
 export default function PerformanceSummary({
                                                answeredRate,

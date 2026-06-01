@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import {
@@ -10,11 +10,7 @@ import {
     Brain,
     ShieldCheck,
     ClipboardList,
-    Phone,
-    ListChecks,
-    Bot,
-    Megaphone,
-    Sparkles,
+    CalendarDays,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -27,17 +23,41 @@ type Props = {
 };
 
 const navigation = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Calls", href: "/calls", icon: Phone },
-    { label: "Actions", href: "/actions", icon: ListChecks },
-    { label: "Insights", href: "/insights", icon: Brain },
-    { label: "Reports", href: "/reports", icon: BarChart3 },
-    { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle },
-    { label: "Tasks", href: "/tasks", icon: ClipboardList },
-    { label: "QA", href: "/qa", icon: Bot },
-    { label: "Outbound", href: "/outbound_campaign", icon: Megaphone },
-    { label: "AI Assistant", href: "/ai-assistant", icon: Sparkles },
-    { label: "Admin", href: "/admin", icon: ShieldCheck },
+    {
+        label: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+    },
+    {
+        label: "Actions",
+        href: "/actions",
+        icon: CalendarDays,
+    },
+    {
+        label: "Reports",
+        href: "/reports",
+        icon: BarChart3,
+    },
+    {
+        label: "Insights",
+        href: "/insights",
+        icon: Brain,
+    },
+    {
+        label: "WhatsApp",
+        href: "/whatsapp",
+        icon: MessageCircle,
+    },
+    {
+        label: "Tasks",
+        href: "/tasks",
+        icon: ClipboardList,
+    },
+    {
+        label: "Admin",
+        href: "/admin",
+        icon: ShieldCheck,
+    },
 ];
 
 export default function ProtectedLayout({
@@ -47,30 +67,13 @@ export default function ProtectedLayout({
     const router = useRouter();
     const [hydrated, setHydrated] = useState(false);
 
-    const { user, isAuthenticated } = useAuthStore();
-
-    useEffect(() => {
-        setHydrated(true);
+    const handleActionsClick = useCallback(() => {
+        void fetch("/api/actions/hotels", { cache: "no-store" }).catch(() => {
+            // ignore errors; navigation should still happen
+        });
     }, []);
 
-    useEffect(() => {
-        if (hydrated && !isAuthenticated) {
-            const returnUrl = encodeURIComponent(pathname);
-            router.replace(`/login?returnUrl=${returnUrl}`);
-        }
-    }, [hydrated, isAuthenticated, pathname, router]);
-
-    if (!hydrated) {
-        return (
-            <div className="flex min-h-dvh items-center justify-center bg-background text-muted-foreground">
-                Loading...
-            </div>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return null;
-    }
+    const { user } = useAuthStore();
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -101,6 +104,7 @@ export default function ProtectedLayout({
                                 <Link
                                     key={item.href}
                                     href={item.href}
+                                    onClick={item.href === "/actions" ? handleActionsClick : undefined}
                                     className={cn(
                                         "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
                                         active

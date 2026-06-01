@@ -1,10 +1,7 @@
-
-"use client";
-
 import { TrendingUp, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = "revenue" | "recommendations";
+type Tab = "revenue" | "recommendations" | string;
 
 type Props = {
   activeTab: Tab;
@@ -32,13 +29,13 @@ export default function InsightsTabNavigation({
   revenueCount,
   recommendationCount,
 }: Props) {
-  const counts = {
+  const counts: Record<string, number> = {
     revenue: revenueCount,
     recommendations: recommendationCount,
   };
 
   return (
-    <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/30 p-1.5">
+    <div className="flex w-full sm:w-auto flex-wrap sm:flex-nowrap gap-2 rounded-xl border border-border bg-muted/30 p-1.5">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
@@ -48,7 +45,7 @@ export default function InsightsTabNavigation({
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200",
+              "flex-1 sm:flex-none flex items-center justify-center sm:justify-start gap-2 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200",
               active
                 ? "bg-background text-foreground shadow-sm border border-border/50"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -56,7 +53,7 @@ export default function InsightsTabNavigation({
           >
             <Icon
               className={cn(
-                "h-4 w-4",
+                "h-3.5 w-3.5 sm:h-4 sm:w-4",
                 active
                   ? tab.id === "recommendations"
                     ? "text-amber-500"
@@ -67,7 +64,7 @@ export default function InsightsTabNavigation({
 
             <span
               className={cn(
-                "hidden sm:inline",
+                "inline sm:inline",
                 active
                   ? tab.id === "recommendations"
                     ? "font-semibold text-amber-700 dark:text-amber-400"
@@ -80,7 +77,7 @@ export default function InsightsTabNavigation({
 
             <span
               className={cn(
-                "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold",
+                "inline-flex h-4.5 min-w-4.5 sm:h-5 sm:min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] sm:text-xs font-semibold",
                 active
                   ? tab.id === "recommendations"
                     ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"

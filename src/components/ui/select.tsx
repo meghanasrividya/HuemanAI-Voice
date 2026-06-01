@@ -1,179 +1,123 @@
-"use client";
+import * as React from "react"
+import { cn } from "@/lib/utils"
+import { ChevronDown } from "lucide-react"
 
-import * as React from "react";
-import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-type SelectCtx = {
-    open: boolean;
-    setOpen: (open: boolean) => void;
-    value: string;
-    setValue: (value: string) => void;
-};
-
-const SelectContext =
-    React.createContext<SelectCtx | null>(
-        null
-    );
-
-function useSelectContext() {
-    const ctx = React.useContext(SelectContext);
-    if (!ctx) {
-        throw new Error(
-            "Select components must be used inside Select"
-        );
-    }
-    return ctx;
+type SelectContextType = {
+  value?: string
+  onValueChange?: (value: string) => void
+  open: boolean
+  setOpen: (open: boolean) => void
 }
 
-export function Select({
-    value,
-    onValueChange,
-    children,
-}: {
-    value: string;
-    onValueChange: (value: string) => void;
-    children: React.ReactNode;
-}) {
-    const [open, setOpen] =
-        React.useState(false);
+const SelectContext = React.createContext<SelectContextType | undefined>(undefined)
 
-    return (
-        <SelectContext.Provider
-            value={{
-                open,
-                setOpen,
-                value,
-                setValue: onValueChange,
-            }}
-        >
-            <div className="relative inline-block w-full">
-                {children}
-            </div>
-        </SelectContext.Provider>
-    );
+export function Select({
+  children,
+  value,
+  onValueChange,
+}: {
+  children: React.ReactNode
+  value?: string
+  onValueChange?: (value: string) => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <SelectContext.Provider value={{ value, onValueChange, open, setOpen }}>
+      <div className="relative inline-block w-full">{children}</div>
+    </SelectContext.Provider>
+  )
 }
 
 export function SelectTrigger({
-    className,
-    children,
-    ...props
+  className,
+  children,
+  ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-    const { open, setOpen } =
-        useSelectContext();
-
-    return (
-        <button
-            type="button"
-            className={cn(
-                "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-                className
-            )}
-            onClick={() => setOpen(!open)}
-            {...props}
-        >
-            {children}
-            <ChevronDown className="h-4 w-4 opacity-50" />
-        </button>
-    );
+  const context = React.useContext(SelectContext)
+  if (!context) throw new Error("SelectTrigger must be used within a Select")
+  return (
+    <button
+      type="button"
+      onClick={() => context.setOpen(!context.open)}
+      className={cn(
+        "flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-[#0c0c0e] px-3 py-2 text-xs sm:text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronDown className="h-4 w-4 opacity-50 text-zinc-500 shrink-0 ml-2" />
+    </button>
+  )
 }
 
 export function SelectValue({
-    placeholder,
+  placeholder,
+  className,
 }: {
-    placeholder?: string;
+  placeholder?: string
+  className?: string
 }) {
-    const { value } = useSelectContext();
-    return (
-        <span className="line-clamp-1">
-            {value || placeholder || ""}
-        </span>
-    );
+  const context = React.useContext(SelectContext)
+  if (!context) throw new Error("SelectValue must be used within a Select")
+  return (
+    <span className={cn("block truncate text-xs sm:text-sm text-foreground", className)}>
+      {context.value || placeholder}
+    </span>
+  )
 }
 
 export function SelectContent({
-    className,
-    children,
-}: {
-    className?: string;
-    children: React.ReactNode;
-}) {
-    const { open, setOpen } =
-        useSelectContext();
-    const ref = React.useRef<HTMLDivElement>(
-        null
-    );
-
-    React.useEffect(() => {
-        function onDocClick(e: MouseEvent) {
-            if (
-                ref.current &&
-                !ref.current.contains(
-                    e.target as Node
-                )
-            ) {
-                setOpen(false);
-            }
-        }
-
-        if (open) {
-            document.addEventListener(
-                "mousedown",
-                onDocClick
-            );
-        }
-        return () =>
-            document.removeEventListener(
-                "mousedown",
-                onDocClick
-            );
-    }, [open, setOpen]);
-
-    if (!open) return null;
-
-    return (
-        <div
-            ref={ref}
-            className={cn(
-                "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-                className
-            )}
-        >
-            {children}
-        </div>
-    );
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  const context = React.useContext(SelectContext)
+  if (!context) throw new Error("SelectContent must be used within a Select")
+  if (!context.open) return null
+  return (
+    <>
+      <div className="fixed inset-0 z-50" onClick={() => context.setOpen(false)} />
+      <div
+        className={cn(
+          "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border border-zinc-800 bg-[#0c0c0e] text-foreground shadow-md animate-in fade-in-80 slide-in-from-top-1 w-full mt-1 max-h-60 overflow-y-auto",
+          className
+        )}
+        {...props}
+      >
+        <div className="p-1">{children}</div>
+      </div>
+    </>
+  )
 }
 
 export function SelectItem({
-    value,
-    className,
-    children,
-}: {
-    value: string;
-    className?: string;
-    children: React.ReactNode;
-}) {
-    const {
-        value: selected,
-        setValue,
-        setOpen,
-    } = useSelectContext();
+  className,
+  value,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { value: string }) {
+  const context = React.useContext(SelectContext)
+  if (!context) throw new Error("SelectItem must be used within a Select")
+  const isSelected = context.value === value
+  return (
+    <div
+      onClick={() => {
+        context.onValueChange?.(value)
+        context.setOpen(false)
+      }}
+      className={cn(
+        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs sm:text-sm outline-none hover:bg-zinc-900 hover:text-white transition-colors",
+        isSelected && "bg-zinc-800 text-white font-medium",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
 
-    return (
-        <button
-            type="button"
-            className={cn(
-                "relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent",
-                selected === value &&
-                    "bg-accent",
-                className
-            )}
-            onClick={() => {
-                setValue(value);
-                setOpen(false);
-            }}
-        >
-            {children}
-        </button>
-    );
+export function SelectGroup({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>
 }
