@@ -19,6 +19,7 @@ import {
     ReportMetadata,
     FeedbackReportDataResponse as ReportDataResponse,
     FeedbackResponseItem as BookingReservation,
+    fetchFeedbackSuggestions,
 } from "../../../../lib/api/reports";
 import DateRangeFilter from "../components/DateRangeFilter";
 
@@ -56,11 +57,17 @@ export default function FeedbackReportPage() {
     const [activeFilters, setActiveFilters] = useState<Array<{ column: string; operator: string; value: string }>>([]);
     const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
     const [operatorDropdownOpen, setOperatorDropdownOpen] = useState(false);
+    const [valueDropdownOpen, setValueDropdownOpen] = useState(false);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
     // Refs for click-outside on custom dropdowns
     const columnDropdownRef = useRef<HTMLDivElement>(null);
     const columnBtnRef = useRef<HTMLButtonElement>(null);
     const operatorDropdownRef = useRef<HTMLDivElement>(null);
+    const valueDropdownRef = useRef<HTMLDivElement>(null);
+    const valueInputRef = useRef<HTMLInputElement>(null);
+    const lastSelectedSuggestionRef = useRef<string>("");
     const [colDropPos, setColDropPos] = useState({ bottom: 0, left: 0, width: 0 });
 
     // Close dropdowns on outside click
@@ -73,10 +80,56 @@ export default function FeedbackReportPage() {
             if (operatorDropdownRef.current && !operatorDropdownRef.current.contains(target)) {
                 setOperatorDropdownOpen(false);
             }
+            const inValueInput = valueInputRef.current?.contains(target);
+            if (valueDropdownRef.current && !valueDropdownRef.current.contains(target) && !inValueInput) {
+                setValueDropdownOpen(false);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Helper to get columns metadata
+    const getColInfo = (colKey: string) => {
+        return metadata?.columns[colKey] || { label: colKey, type: "UNKNOWN" };
+    };
+
+    // Debounce and fetch filter suggestions
+    useEffect(() => {
+        if (!pendingFilterColumn || !String(pendingFilterValue || "").trim()) {
+            setSuggestions([]);
+            return;
+        }
+
+        const isDateCol = getColInfo(pendingFilterColumn).type === "date";
+        if (isDateCol) {
+            setSuggestions([]);
+            return;
+        }
+
+        if (String(pendingFilterValue || "") === lastSelectedSuggestionRef.current) {
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setSuggestionsLoading(true);
+            try {
+                const res = await fetchFeedbackSuggestions(pendingFilterColumn, String(pendingFilterValue || ""));
+                if (res && res.values) {
+                    setSuggestions(res.values.map(v => v === null || v === undefined ? "" : String(v)));
+                } else {
+                    setSuggestions([]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch suggestions:", err);
+                setSuggestions([]);
+            } finally {
+                setSuggestionsLoading(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [pendingFilterColumn, pendingFilterValue]);
 
     // Debounce search input
     useEffect(() => {
@@ -367,8 +420,70 @@ export default function FeedbackReportPage() {
         if (!reportData || activeFilters.length === 0) return reportData;
         const filtered = reportData.data.filter(row =>
             activeFilters.every(f => {
-                const cellVal = String(row[f.column] ?? "").toLowerCase().trim();
-                const filterVal = f.value.toLowerCase().trim();
+                const isDateCol = getColInfo(f.column).type === "date";
+                let cellVal = String(row[f.column] ?? "").toLowerCase().trim();
+                let filterVal = f.value.toLowerCase().trim();
+
+                if (isDateCol) {
+                    // Extract YYYY-MM-DD from cellVal (e.g. 2026-05-30T00:00:00.000Z -> 2026-05-30)
+                    if (cellVal.includes("t")) {
+                        cellVal = cellVal.split("t")[0];
+                    } else if (cellVal.includes(" ")) {
+                        cellVal = cellVal.split(" ")[0];
+                    }
+                    
+                    try {
+                        const d = new Date(row[f.column]);
+                        if (!isNaN(d.getTime())) {
+                            const y = d.getUTCFullYear();
+                            const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+                            const day = String(d.getUTCDate()).padStart(2, "0");
+                            cellVal = `${y}-${m}-${day}`;
+                            
+                            const ly = d.getFullYear();
+                            const lm = String(d.getMonth() + 1).padStart(2, "0");
+                            const lday = String(d.getDate()).padStart(2, "0");
+                            const localDateStr = `${ly}-${lm}-${lday}`;
+                            
+                            if (f.operator === "equals") {
+                                return cellVal === filterVal || localDateStr === filterVal;
+                            }
+                            if (f.operator === "contains") {
+                                return cellVal.includes(filterVal) || localDateStr.includes(filterVal);
+                            }
+                            if (f.operator === "greater_than_or_equal") {
+                                return cellVal >= filterVal || localDateStr >= filterVal;
+                            }
+                            if (f.operator === "less_than_or_equal") {
+                                return cellVal <= filterVal || localDateStr <= filterVal;
+                            }
+                            if (f.operator === "in_list") {
+                                const list = filterVal.split(",").map(v => v.trim());
+                                return list.some(v => cellVal === v || localDateStr === v);
+                            }
+                        }
+                    } catch (e) {
+                        // fallback to string comparison
+                    }
+                }
+
+                if (f.operator === "greater_than_or_equal") {
+                    const cellNum = Number(cellVal);
+                    const filterNum = Number(filterVal);
+                    if (!isNaN(cellNum) && !isNaN(filterNum)) {
+                        return cellNum >= filterNum;
+                    }
+                    return cellVal >= filterVal;
+                }
+                if (f.operator === "less_than_or_equal") {
+                    const cellNum = Number(cellVal);
+                    const filterNum = Number(filterVal);
+                    if (!isNaN(cellNum) && !isNaN(filterNum)) {
+                        return cellNum <= filterNum;
+                    }
+                    return cellVal <= filterVal;
+                }
+
                 if (f.operator === "equals") return cellVal === filterVal;
                 if (f.operator === "contains") return cellVal.includes(filterVal);
                 if (f.operator === "in_list") return filterVal.split(",").map(v => v.trim()).some(v => cellVal === v);
@@ -609,6 +724,9 @@ export default function FeedbackReportPage() {
                                                                     key={colKey}
                                                                     onClick={() => {
                                                                         setPendingFilterColumn(colKey);
+                                                                        setPendingFilterOperator("equals");
+                                                                        setPendingFilterValue("");
+                                                                        lastSelectedSuggestionRef.current = "";
                                                                         setColumnDropdownOpen(false);
                                                                     }}
                                                                     className={`w-full text-left px-4 py-2.5 text-[11px] hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium ${
@@ -626,73 +744,151 @@ export default function FeedbackReportPage() {
                                                 <div className="flex gap-2 mb-3">
                                                     {/* Operator custom dropdown */}
                                                     <div className="relative shrink-0" ref={operatorDropdownRef}>
-                                                        <button
-                                                            onClick={() => {
-                                                                setOperatorDropdownOpen(v => !v);
-                                                                setColumnDropdownOpen(false);
-                                                            }}
-                                                            className="flex items-center gap-1.5 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-zinc-300 font-semibold whitespace-nowrap hover:border-[#333] transition-colors"
-                                                        >
-                                                            {pendingFilterOperator === "equals" ? "Equals" : pendingFilterOperator === "contains" ? "Contains" : "In List"}
-                                                            <ChevronRight size={11} className={`text-zinc-500 transition-transform ${operatorDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
-                                                        </button>
-                                                        {operatorDropdownOpen && (
-                                                            <div className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100">
-                                                                {[
+                                                        {(() => {
+                                                            const colType = getColInfo(pendingFilterColumn).type;
+                                                            const opOptions = colType === "number"
+                                                                ? [
+                                                                    { id: "equals", label: "Equals" },
+                                                                    { id: "greater_than_or_equal", label: "≥" },
+                                                                    { id: "less_than_or_equal", label: "≤" },
+                                                                    { id: "in_list", label: "In List" },
+                                                                  ]
+                                                                : colType === "date"
+                                                                ? [
+                                                                    { id: "equals", label: "Equals" },
+                                                                    { id: "greater_than_or_equal", label: "≥" },
+                                                                    { id: "less_than_or_equal", label: "≤" },
+                                                                  ]
+                                                                : [
                                                                     { id: "equals", label: "Equals" },
                                                                     { id: "contains", label: "Contains" },
                                                                     { id: "in_list", label: "In List" },
-                                                                ].map(op => (
+                                                                  ];
+
+                                                            const activeOpLabel = opOptions.find(o => o.id === pendingFilterOperator)?.label || "Equals";
+
+                                                            return (
+                                                                <>
                                                                     <button
-                                                                        key={op.id}
                                                                         onClick={() => {
-                                                                            setPendingFilterOperator(op.id);
-                                                                            setOperatorDropdownOpen(false);
+                                                                            setOperatorDropdownOpen(v => !v);
+                                                                            setColumnDropdownOpen(false);
                                                                         }}
-                                                                        className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
+                                                                        className="flex items-center gap-1.5 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-zinc-300 font-semibold whitespace-nowrap hover:border-[#333] transition-colors"
                                                                     >
-                                                                        <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#10b981]" : "text-transparent"}`}>✓</span>
-                                                                        {op.label}
+                                                                        {activeOpLabel}
+                                                                        <ChevronRight size={11} className={`text-zinc-500 transition-transform ${operatorDropdownOpen ? "-rotate-90" : "rotate-90"}`} />
                                                                     </button>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                                    {operatorDropdownOpen && (
+                                                                        <div className="absolute top-full left-0 mt-1 bg-[#161616] border border-[#232323] rounded-[8px] overflow-hidden z-50 shadow-2xl min-w-[110px] animate-in fade-in slide-in-from-top-1 duration-100">
+                                                                            {opOptions.map(op => (
+                                                                                <button
+                                                                                    key={op.id}
+                                                                                    onClick={() => {
+                                                                                        setPendingFilterOperator(op.id);
+                                                                                        setOperatorDropdownOpen(false);
+                                                                                    }}
+                                                                                    className="w-full text-left px-3 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium flex items-center gap-2"
+                                                                                >
+                                                                                    <span className={`text-[10px] ${pendingFilterOperator === op.id ? "text-[#10b981]" : "text-transparent"}`}>✓</span>
+                                                                                    {op.label}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
 
-                                                    {/* Value input */}
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Value..."
-                                                        value={pendingFilterValue}
-                                                        onChange={e => setPendingFilterValue(e.target.value)}
-                                                        onKeyDown={e => {
-                                                            if (e.key === "Enter" && pendingFilterColumn && pendingFilterValue.trim()) {
-                                                                setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: pendingFilterValue.trim() }]);
-                                                                setPage(1);
-                                                                setPendingFilterColumn("");
-                                                                setPendingFilterValue("");
-                                                                setPendingFilterOperator("equals");
-                                                            }
-                                                        }}
-                                                        className="flex-1 min-w-0 bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-emerald-500/50"
-                                                    />
+                                                    {/* Value Input and Autocomplete Suggestions */}
+                                                    <div className="relative flex-1 min-w-0">
+                                                        {(() => {
+                                                            const isDateField = getColInfo(pendingFilterColumn).type === "date";
+                                                            return (
+                                                                <>
+                                                                    <input
+                                                                        ref={valueInputRef}
+                                                                        type={isDateField ? "date" : "text"}
+                                                                        placeholder={isDateField ? "Select Date..." : "Value..."}
+                                                                        value={pendingFilterValue}
+                                                                        onChange={e => {
+                                                                            setPendingFilterValue(e.target.value);
+                                                                            if (!isDateField) {
+                                                                                setValueDropdownOpen(true);
+                                                                            }
+                                                                        }}
+                                                                        onFocus={() => {
+                                                                            if (!isDateField) {
+                                                                                setValueDropdownOpen(true);
+                                                                            }
+                                                                        }}
+                                                                        onKeyDown={e => {
+                                                                            if (e.key === "Enter" && pendingFilterColumn && String(pendingFilterValue || "").trim()) {
+                                                                                setActiveFilters(prev => [...prev, { column: pendingFilterColumn, operator: pendingFilterOperator, value: String(pendingFilterValue || "").trim() }]);
+                                                                                setPage(1);
+                                                                                setPendingFilterColumn("");
+                                                                                setPendingFilterValue("");
+                                                                                lastSelectedSuggestionRef.current = "";
+                                                                                setPendingFilterOperator("equals");
+                                                                                setValueDropdownOpen(false);
+                                                                            }
+                                                                        }}
+                                                                        style={{ colorScheme: "dark" }}
+                                                                        className="w-full bg-[#161616] border border-[#232323] rounded-[8px] px-3 py-2.5 text-[11px] text-white placeholder-zinc-600 font-medium focus:outline-none focus:border-emerald-500/50"
+                                                                    />
+
+                                                                    {valueDropdownOpen && !isDateField && (suggestions.length > 0 || suggestionsLoading) && (
+                                                                        <div
+                                                                            ref={valueDropdownRef}
+                                                                            className="absolute top-full left-0 right-0 mt-1 bg-[#161616] border border-[#232323] rounded-[10px] overflow-hidden z-[9999] shadow-2xl max-h-[160px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-100"
+                                                                        >
+                                                                            {suggestionsLoading ? (
+                                                                                <div className="flex items-center justify-center py-3 text-[10px] text-zinc-500 gap-1.5">
+                                                                                    <Loader2 className="animate-spin text-[#10b981]" size={10} />
+                                                                                    Loading...
+                                                                                </div>
+                                                                            ) : (
+                                                                                suggestions.map((sug, idx) => (
+                                                                                    <button
+                                                                                        key={idx}
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            lastSelectedSuggestionRef.current = sug;
+                                                                                            setPendingFilterValue(String(sug ?? ""));
+                                                                                            setValueDropdownOpen(false);
+                                                                                        }}
+                                                                                        className="w-full text-left px-4 py-2.5 text-[11px] text-zinc-300 hover:bg-[#1f1f1f] hover:text-white transition-colors font-medium border-b border-[#232323]/30 last:border-b-0"
+                                                                                    >
+                                                                                        {sug}
+                                                                                    </button>
+                                                                                ))
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
 
                                                 {/* Add Filter button */}
                                                 <button
                                                     onClick={() => {
-                                                        if (!pendingFilterColumn || !pendingFilterValue.trim()) return;
+                                                        if (!pendingFilterColumn || !String(pendingFilterValue || "").trim()) return;
                                                         setActiveFilters(prev => [...prev, {
                                                             column: pendingFilterColumn,
                                                             operator: pendingFilterOperator,
-                                                            value: pendingFilterValue.trim(),
+                                                            value: String(pendingFilterValue || "").trim(),
                                                         }]);
                                                         setPage(1);
                                                         setPendingFilterColumn("");
                                                         setPendingFilterValue("");
+                                                        lastSelectedSuggestionRef.current = "";
                                                         setPendingFilterOperator("equals");
+                                                        setValueDropdownOpen(false);
                                                     }}
-                                                    disabled={!pendingFilterColumn || !pendingFilterValue.trim()}
+                                                    disabled={!pendingFilterColumn || !String(pendingFilterValue || "").trim()}
                                                     className="w-full py-2.5 rounded-[8px] bg-gradient-to-r from-[#047857] to-[#065f46] hover:from-[#059669] hover:to-[#047857] text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     + Add Filter
@@ -708,7 +904,17 @@ export default function FeedbackReportPage() {
                                                     <div key={i} className="flex items-center justify-between bg-[#111] border border-[#1e1e1e] rounded-[8px] px-3 py-2">
                                                         <span className="text-[10px] font-medium leading-tight">
                                                             <span className="text-white font-bold">{metadata?.columns[f.column]?.label || f.column}</span>
-                                                            <span className="text-zinc-500 mx-1">{f.operator === "equals" ? "=" : f.operator === "contains" ? "~" : "∈"}</span>
+                                                            <span className="text-zinc-500 mx-1">
+                                                                {f.operator === "equals"
+                                                                    ? "="
+                                                                    : f.operator === "contains"
+                                                                    ? "~"
+                                                                    : f.operator === "greater_than_or_equal"
+                                                                    ? "≥"
+                                                                    : f.operator === "less_than_or_equal"
+                                                                    ? "≤"
+                                                                    : "∈"}
+                                                            </span>
                                                             <span className="text-[#10b981]">{f.value}</span>
                                                         </span>
                                                         <button

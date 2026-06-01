@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
+import Link from "next/link";
 
 
 import {
@@ -904,6 +905,8 @@ function BookingsBreakdown({
   const [activeTab, setActiveTab] = useState<"dateBooked" | "visitDate">(
     "dateBooked"
   );
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   const gradients = [
     { from: "#16a34a", to: "#4ade80" },
     { from: "#0369a1", to: "#38bdf8" },
@@ -914,40 +917,80 @@ function BookingsBreakdown({
     { from: "#0e7490", to: "#22d3ee" },
   ];
 
-  const bookedBookings = [...(data.dailyBookings?.byDateBooked || [])].sort(
-    (a, b) => daySortValue(a.date) - daySortValue(b.date)
-  );
+  const groupBookings = (bookings: BookingItem[]) => {
+    const map = new Map<number, {
+      weekday: number;
+      date: string;
+      count: number;
+      dates: string[];
+    }>();
+
+    for (const item of bookings) {
+      const weekday = daySortValue(item.date);
+      const val = toNumber(item.count);
+      const dateStr = item.date || "";
+
+      if (map.has(weekday)) {
+        const existing = map.get(weekday)!;
+        existing.count += val;
+        existing.dates.push(dateStr);
+      } else {
+        map.set(weekday, {
+          weekday,
+          date: dateStr,
+          count: val,
+          dates: [dateStr],
+        });
+      }
+    }
+
+    return Array.from(map.values())
+      .sort((a, b) => a.weekday - b.weekday)
+      .map(item => ({
+        date: item.date,
+        count: item.count,
+        dates: item.dates,
+        isMerged: item.dates.length > 1,
+      }));
+  };
+
+  const bookedBookings = groupBookings(data.dailyBookings?.byDateBooked || []);
 
   const bookedTotal = bookedBookings.reduce(
-    (sum, item) => sum + toNumber(item.count),
+    (sum, item) => sum + item.count,
     0
   );
 
   const bookedMax = Math.max(
     1,
-    ...bookedBookings.map((item) => toNumber(item.count))
+    ...bookedBookings.map((item) => item.count)
   );
 
   const bookedPeakIndex = bookedBookings.findIndex(
-    (item) => toNumber(item.count) === bookedMax
+    (item) => item.count === bookedMax
   );
 
-  const visitBookings = [...(data.dailyBookings?.byVisitDate || [])].sort(
-    (a, b) => daySortValue(a.date) - daySortValue(b.date)
-  );
+  const visitBookings = [...(data.dailyBookings?.byVisitDate || [])]
+    .sort((a, b) => new Date(a.date || "").getTime() - new Date(b.date || "").getTime())
+    .map(item => ({
+      date: item.date || "",
+      count: toNumber(item.count),
+      isMerged: false,
+      dates: [item.date || ""],
+    }));
 
   const visitTotal = visitBookings.reduce(
-    (sum, item) => sum + toNumber(item.count),
+    (sum, item) => sum + item.count,
     0
   );
 
   const visitMax = Math.max(
     1,
-    ...visitBookings.map((item) => toNumber(item.count))
+    ...visitBookings.map((item) => item.count)
   );
 
   const visitPeakIndex = visitBookings.findIndex(
-    (item) => toNumber(item.count) === visitMax
+    (item) => item.count === visitMax
   );
 
   return (
@@ -964,7 +1007,7 @@ function BookingsBreakdown({
 
         <div className="flex bg-[#0f0f0f] border border-[#222] rounded-full p-[3px]">
           <button
-            onClick={() => setActiveTab("dateBooked")}
+            onClick={() => { setActiveTab("dateBooked"); setHoveredIdx(null); }}
             className={`px-4 py-1.5 text-[9px] rounded-full transition-all duration-200 ${activeTab === "dateBooked"
               ? "bg-emerald-400 text-black font-black shadow-[0_0_14px_rgba(39,214,162,0.45)]"
               : "text-zinc-500 hover:text-white font-semibold"
@@ -974,7 +1017,7 @@ function BookingsBreakdown({
           </button>
 
           <button
-            onClick={() => setActiveTab("visitDate")}
+            onClick={() => { setActiveTab("visitDate"); setHoveredIdx(null); }}
             className={`px-4 py-1.5 text-[9px] rounded-full transition-all duration-200 ${activeTab === "visitDate"
               ? "bg-[#a855f7] text-white font-black shadow-[0_0_14px_rgba(168,85,247,0.45)]"
               : "text-zinc-500 hover:text-white font-semibold"
@@ -1000,7 +1043,7 @@ function BookingsBreakdown({
               <div
                 key={item.date || idx}
                 style={{
-                  width: `${pct(toNumber(item.count), bookedTotal)}%`,
+                  width: `${pct(item.count, bookedTotal)}%`,
                   background: COLORS[idx % COLORS.length],
                 }}
               />
@@ -1020,7 +1063,7 @@ function BookingsBreakdown({
 
           <div className="flex items-end justify-between h-[420px] px-2">
             {bookedBookings.map((item, idx) => {
-              const value = toNumber(item.count);
+              const value = item.count;
 
               const heightPx = Math.max(
                 (value / bookedMax) * 280,
@@ -1030,6 +1073,10 @@ function BookingsBreakdown({
               const isPeak = idx === bookedPeakIndex;
 
               const g = gradients[idx % gradients.length];
+
+              const dateRangeLabel = item.isMerged
+                ? `${dateLabel(item.dates[0])} - ${dateLabel(item.dates[1])}`
+                : dateLabel(item.date);
 
               return (
                 <div
@@ -1046,9 +1093,35 @@ function BookingsBreakdown({
                       height: `${heightPx}px`,
                       background: `linear-gradient(to bottom, ${g.from}, ${g.to})`,
                     }}
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
                   >
                     {isPeak && (
                       <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white/80 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
+                    )}
+
+                    {hoveredIdx === idx && (
+                      <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-[#151515] border border-[#2a2a2a] rounded-[8px] px-3.5 py-2.5 shadow-2xl z-[100] min-w-[135px] text-left pointer-events-none">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: COLORS[idx % COLORS.length] }}
+                          />
+                          <span className="text-[11px] font-black text-white leading-none">
+                            {value} Bookings
+                          </span>
+                        </div>
+                        <p className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase mb-1 leading-none">
+                          {Math.round(pct(value, bookedTotal))}% OF TOTAL PERIOD
+                        </p>
+                        <p className="text-[9px] font-bold text-zinc-400 tracking-wider uppercase leading-none">
+                          {item.isMerged
+                            ? `${dayLabel(item.date, "short")} ${dateLabel(item.dates[0])} - ${dateLabel(item.dates[1])}`.toUpperCase()
+                            : `${dayLabel(item.date, "short")} ${dateLabel(item.date)}`.toUpperCase()
+                          }
+                        </p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-[#151515]" />
+                      </div>
                     )}
                   </div>
 
@@ -1062,8 +1135,8 @@ function BookingsBreakdown({
                       {dayLabel(item.date, "short").toUpperCase()}
                     </p>
 
-                    <p className="text-zinc-600 text-[9px] mt-0.5">
-                      {dateLabel(item.date)}
+                    <p className="text-zinc-600 text-[9px] mt-0.5 whitespace-nowrap">
+                      {dateRangeLabel}
                     </p>
 
                     {isPeak && (
@@ -1085,7 +1158,7 @@ function BookingsBreakdown({
               <div
                 key={item.date || idx}
                 style={{
-                  width: `${pct(toNumber(item.count), visitTotal)}%`,
+                  width: `${pct(item.count, visitTotal)}%`,
                   background: COLORS[idx % COLORS.length],
                 }}
               />
@@ -1099,13 +1172,13 @@ function BookingsBreakdown({
             </span>
             <span className="ml-1">on</span>
             <span className="font-bold text-white ml-1">
-              {dayLabel(visitBookings[visitPeakIndex]?.date)}
+              {dayLabel(visitBookings[visitPeakIndex]?.date)} {dateLabel(visitBookings[visitPeakIndex]?.date)}
             </span>
           </p>
 
           <div className="flex items-end justify-between h-[420px] px-2">
             {visitBookings.map((item, idx) => {
-              const value = toNumber(item.count);
+              const value = item.count;
 
               const heightPx = Math.max(
                 (value / visitMax) * 280,
@@ -1115,6 +1188,8 @@ function BookingsBreakdown({
               const isPeak = idx === visitPeakIndex;
 
               const g = gradients[idx % gradients.length];
+
+              const dateRangeLabel = dateLabel(item.date);
 
               return (
                 <div
@@ -1131,25 +1206,54 @@ function BookingsBreakdown({
                       height: `${heightPx}px`,
                       background: `linear-gradient(to bottom, ${g.from}, ${g.to})`,
                     }}
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
                   >
                     {isPeak && (
                       <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white/80 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
                     )}
+
+                    {hoveredIdx === idx && (
+                      <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-[#151515] border border-[#2a2a2a] rounded-[8px] px-3.5 py-2.5 shadow-2xl z-[100] min-w-[135px] text-left pointer-events-none">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: COLORS[idx % COLORS.length] }}
+                          />
+                          <span className="text-[11px] font-black text-white leading-none">
+                            {value} Bookings
+                          </span>
+                        </div>
+                        <p className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase mb-1 leading-none">
+                          {Math.round(pct(value, visitTotal))}% OF TOTAL PERIOD
+                        </p>
+                        <p className="text-[9px] font-bold text-zinc-400 tracking-wider uppercase leading-none">
+                          {`${dayLabel(item.date, "short")} ${dateLabel(item.date)}`.toUpperCase()}
+                        </p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-[#151515]" />
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-5 text-center">
-                    <p
-                      className="font-black text-[9px] tracking-widest uppercase"
-                      style={{
-                        color: COLORS[idx % COLORS.length],
-                      }}
-                    >
-                      {dayLabel(item.date, "short").toUpperCase()}
-                    </p>
+                  <div className="mt-5 text-center min-h-[50px]">
+                    {idx % 4 === 0 ? (
+                      <>
+                        <p
+                          className="font-black text-[9px] tracking-widest uppercase"
+                          style={{
+                            color: COLORS[idx % COLORS.length],
+                          }}
+                        >
+                          {dayLabel(item.date, "short").toUpperCase()}
+                        </p>
 
-                    <p className="text-zinc-600 text-[9px] mt-0.5">
-                      {dateLabel(item.date)}
-                    </p>
+                        <p className="text-zinc-600 text-[9px] mt-0.5 whitespace-nowrap">
+                          {dateRangeLabel}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="h-[26px]" />
+                    )}
 
                     {isPeak && (
                       <div className="mt-2 inline-flex bg-[#a855f7] text-white text-[8px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.6)]">
@@ -1183,7 +1287,7 @@ function CallsPerDay({ data }: DashboardDataProps) {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data.volumeTrend || []}
-            margin={{ top: 8, right: 8, left: -24, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
           >
             <defs>
               <linearGradient id="callsGradient" x1="0" y1="0" x2="0" y2="1">
@@ -1194,18 +1298,18 @@ function CallsPerDay({ data }: DashboardDataProps) {
             <CartesianGrid vertical={false} stroke="#1a1a1a" />
             <XAxis
               dataKey="label"
-              stroke="transparent"
+              stroke="#2e2e2e"
               tickLine={false}
-              axisLine={false}
+              axisLine={true}
               tick={{ fill: "#525252", fontSize: 9 }}
             />
             <YAxis
               width={32}
               ticks={[0, 6, 12, 18, 24]}
               domain={[0, 24]}
-              stroke="transparent"
+              stroke="#2e2e2e"
               tickLine={false}
-              axisLine={false}
+              axisLine={true}
               tick={{ fill: "#525252", fontSize: 9 }}
             />
             <Tooltip
@@ -1235,28 +1339,30 @@ function UpsellPerformance({ data }: DashboardDataProps) {
   const revenue = toNumber(data.upsellStats?.totalRevenue);
 
   return (
-    <Section className="p-[24px] flex flex-col">
-      <h3 className="font-black text-[12px] leading-none tracking-wider mb-1.5 text-zinc-100">
-        UPSELL PERFORMANCE
-      </h3>
-      <p className="text-zinc-500 text-[10px] mb-6">Extra revenue generated from calls</p>
+    <Link href="/calls" className="block cursor-pointer h-full">
+      <Section className="p-[24px] flex flex-col h-full hover:border-cyan-500/40 transition-all duration-300">
+        <h3 className="font-black text-[12px] leading-none tracking-wider mb-1.5 text-zinc-100">
+          UPSELL PERFORMANCE
+        </h3>
+        <p className="text-zinc-500 text-[10px] mb-6">Extra revenue generated from calls</p>
 
-      <div className="flex flex-1 justify-center items-center py-6">
-        <h1 className="text-[38px] font-black text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-          {formatCurrency(revenue)}
-        </h1>
-      </div>
-
-      <div className="h-[52px] rounded-[8px] border border-emerald-800/40 bg-emerald-950/40 px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] font-bold text-white">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          Total Successful Upsells
+        <div className="flex flex-1 justify-center items-center py-6">
+          <h1 className="text-[38px] font-black text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+            {formatCurrency(revenue)}
+          </h1>
         </div>
-        <span className="text-[14px] font-black text-emerald-400">
-          {data.upsellStats?.successfulUpsells ?? 0}
-        </span>
-      </div>
-    </Section>
+
+        <div className="h-[52px] rounded-[8px] border border-emerald-800/40 bg-emerald-950/40 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-bold text-white">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Total Successful Upsells
+          </div>
+          <span className="text-[14px] font-black text-emerald-400">
+            {data.upsellStats?.successfulUpsells ?? 0}
+          </span>
+        </div>
+      </Section>
+    </Link>
   );
 }
 
@@ -1543,6 +1649,8 @@ function TopSpecialRequests({ analyticsData }: AnalyticsDataProps) {
 // ─── Reservation Timing ───────────────────────────────────────────────────────
 
 function ReservationTiming({ data, metrics }: DashboardDataWithMetricsProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   return (
     <Section className="p-[24px]">
       <h2 className="text-[12px] leading-none font-black tracking-wider text-zinc-100">
@@ -1603,6 +1711,7 @@ function ReservationTiming({ data, metrics }: DashboardDataWithMetricsProps) {
         <div className="flex items-end h-[240px] gap-[3px]">
           {(data.timingDistribution || []).map((item, idx) => {
             const heightPx = (toNumber(item.value) / metrics.timingMax) * 180;
+            const value = toNumber(item.value);
 
             return (
               <div
@@ -1610,9 +1719,23 @@ function ReservationTiming({ data, metrics }: DashboardDataWithMetricsProps) {
                 className="flex-1 flex flex-col justify-end items-center h-full"
               >
                 <div
-                  className="w-full bg-cyan-400 rounded-t-[4px] transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer"
+                  className="w-full bg-cyan-400 rounded-t-[4px] transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer relative"
                   style={{ height: `${Math.max(heightPx, 6)}px` }}
-                />
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                >
+                  {hoveredIdx === idx && (
+                    <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#151515] border border-[#2a2a2a] rounded-[6px] px-2.5 py-1.5 shadow-2xl z-[100] min-w-[55px] text-center pointer-events-none">
+                      <p className="text-[11px] font-black text-white leading-none mb-1">
+                        {value}
+                      </p>
+                      <p className="text-[8px] font-bold text-zinc-500 tracking-wider uppercase leading-none">
+                        {item.label}
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[4px] border-x-transparent border-t-[4px] border-t-[#151515]" />
+                    </div>
+                  )}
+                </div>
                 <p className="text-[8px] text-zinc-600 mt-3 rotate-0 truncate w-full text-center">
                   {item.label}
                 </p>

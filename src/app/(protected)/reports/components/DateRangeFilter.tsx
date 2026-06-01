@@ -1,6 +1,6 @@
 import React from "react";
 import { Calendar, ChevronRight } from "lucide-react";
-import { ReportMetadata } from "../../../lib/api/reports";
+import { ReportMetadata } from "@/lib/api/reports";
 
 type DateRangeFilterProps = {
     metadata: ReportMetadata | null;
@@ -82,7 +82,7 @@ export default function DateRangeFilter({
                         }}
                         className={`w-full bg-[#161616] border border-[#232323] rounded-[8px] text-[11px] p-2.5 text-zinc-300 font-semibold focus:outline-none ${selectFocusClass} appearance-none cursor-pointer`}
                     >
-                        {metadata.dateColumns.map((colKey) => (
+                        {metadata.dateColumns.map((colKey: string) => (
                             <option key={colKey} value={colKey}>
                                 {metadata.columns[colKey]?.label || colKey}
                             </option>

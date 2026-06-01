@@ -70,10 +70,17 @@ export async function generateBookingsReport(
     const fromDate = params?.startDate ? (params.startDate.includes("T") ? params.startDate.split("T")[0] : params.startDate) : undefined;
     const toDate = params?.endDate ? (params.endDate.includes("T") ? params.endDate.split("T")[0] : params.endDate) : undefined;
 
+    const operatorMap: Record<string, string> = {
+        equals: "eq",
+        contains: "like",
+        in_list: "in",
+        greater_than_or_equal: "gte",
+        less_than_or_equal: "lte",
+    };
+
     const formattedFilters = (params?.filters || []).map(f => ({
         column: f.column,
-        field: f.column, // In case backend expects field instead of column
-        operator: f.operator,
+        operator: operatorMap[f.operator] || f.operator,
         value: f.value
     }));
 
@@ -81,29 +88,17 @@ export async function generateBookingsReport(
 
     const payload = params ? {
         columns: params.columns,
+        filters: formattedFilters,
+        page: params.page,
+        pageSize: params.pageSize,
         ...(hasDateRange ? {
             dateRange: {
                 column: params.dateField,
                 from: fromDate,
                 to: toDate,
-            },
-            date_field: params.dateField,
-            dateField: params.dateField,
-            start_date: params.startDate,
-            startDate: params.startDate,
-            end_date: params.endDate,
-            endDate: params.endDate,
+            }
         } : {}),
-        filters: formattedFilters,
-        page: params.page,
-        pageSize: params.pageSize,
-
-        // Backward compatibility:
-        ...(params.search !== undefined ? { search: params.search } : {}),
-        page_size: params.pageSize,
-        pageSize_compat: params.pageSize,
-        limit: params.pageSize,
-        offset: params.page && params.pageSize ? (params.page - 1) * params.pageSize : 0,
+        ...(params.search ? { search: params.search } : {})
     } : {};
 
     const response = await apiClient.post<ReportDataResponse>(
@@ -116,6 +111,29 @@ export async function generateBookingsReport(
             }
         }
     );
+    return response.data;
+}
+
+export type SuggestionsResponse = {
+    column: string;
+    values: string[];
+    _csrf?: string;
+};
+
+export async function fetchBookingsSuggestions(
+    column: string,
+    search: string
+): Promise<SuggestionsResponse> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token")?.replace("Bearer ", "") || "" : "";
+    const csrf = typeof window !== "undefined" ? localStorage.getItem("csrf_token") || "" : "";
+
+    const response = await apiClient.get<SuggestionsResponse>("/reports/bookings/suggestions", {
+        params: { column, search },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-TOKEN": csrf
+        }
+    });
     return response.data;
 }
 
@@ -239,6 +257,23 @@ export async function generateFeedbackReport(
             }
         }
     );
+    return response.data;
+}
+
+export async function fetchFeedbackSuggestions(
+    column: string,
+    search: string
+): Promise<SuggestionsResponse> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token")?.replace("Bearer ", "") || "" : "";
+    const csrf = typeof window !== "undefined" ? localStorage.getItem("csrf_token") || "" : "";
+
+    const response = await apiClient.get<SuggestionsResponse>("/reports/feedback/suggestions", {
+        params: { column, search },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-TOKEN": csrf
+        }
+    });
     return response.data;
 }
 
@@ -373,6 +408,23 @@ export async function generateActionsReport(
     return response.data;
 }
 
+export async function fetchActionsSuggestions(
+    column: string,
+    search: string
+): Promise<SuggestionsResponse> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token")?.replace("Bearer ", "") || "" : "";
+    const csrf = typeof window !== "undefined" ? localStorage.getItem("csrf_token") || "" : "";
+
+    const response = await apiClient.get<SuggestionsResponse>("/reports/actions/suggestions", {
+        params: { column, search },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-TOKEN": csrf
+        }
+    });
+    return response.data;
+}
+
 export type CouponResponseItem = {
     coupon_code?: string;
     reference_no?: string;
@@ -490,6 +542,23 @@ export async function generateCouponsReport(
             }
         }
     );
+    return response.data;
+}
+
+export async function fetchCouponsSuggestions(
+    column: string,
+    search: string
+): Promise<SuggestionsResponse> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token")?.replace("Bearer ", "") || "" : "";
+    const csrf = typeof window !== "undefined" ? localStorage.getItem("csrf_token") || "" : "";
+
+    const response = await apiClient.get<SuggestionsResponse>("/reports/coupons/suggestions", {
+        params: { column, search },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "X-CSRF-TOKEN": csrf
+        }
+    });
     return response.data;
 }
 
