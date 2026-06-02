@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  basePath: "/HuemanAI_Voice",
-  assetPrefix: "/HuemanAI_Voice/",
-  images: {
-    unoptimized: true,
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://voice.huemanai.co.uk/api/:path*",
+      },
+    ];
   },
 };
 
