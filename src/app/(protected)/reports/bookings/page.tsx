@@ -232,6 +232,8 @@ export default function BookingsReportPage() {
                 }
 
                 else if (dateRangeType === "month") {
+                    const lastDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+
                     start = createUTCDate(
                         now.getUTCFullYear(),
                         now.getUTCMonth(),
@@ -241,7 +243,7 @@ export default function BookingsReportPage() {
                     end = createUTCDate(
                         now.getUTCFullYear(),
                         now.getUTCMonth(),
-                        now.getUTCDate(),
+                        lastDayOfMonth,
                         true
                     );
                 }

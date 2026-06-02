@@ -78,11 +78,21 @@ export async function generateBookingsReport(
         less_than_or_equal: "lte",
     };
 
-    const formattedFilters = (params?.filters || []).map(f => ({
-        column: f.column,
-        operator: operatorMap[f.operator] || f.operator,
-        value: f.value
-    }));
+    const formattedFilters = (params?.filters || []).map(f => {
+        const mappedOp = operatorMap[f.operator] || f.operator;
+        if (mappedOp === "in") {
+            return {
+                column: f.column,
+                operator: mappedOp,
+                values: f.value.split(",").map((v: string) => v.trim()).filter(Boolean)
+            };
+        }
+        return {
+            column: f.column,
+            operator: mappedOp,
+            value: f.value
+        };
+    });
 
     const hasDateRange = !!(fromDate || toDate);
 
@@ -211,40 +221,45 @@ export async function generateFeedbackReport(
     const fromDate = params?.startDate ? (params.startDate.includes("T") ? params.startDate.split("T")[0] : params.startDate) : undefined;
     const toDate = params?.endDate ? (params.endDate.includes("T") ? params.endDate.split("T")[0] : params.endDate) : undefined;
 
-    const formattedFilters = (params?.filters || []).map(f => ({
-        column: f.column,
-        field: f.column,
-        operator: f.operator,
-        value: f.value
-    }));
+    const operatorMap: Record<string, string> = {
+        equals: "eq",
+        contains: "like",
+        in_list: "in",
+        greater_than_or_equal: "gte",
+        less_than_or_equal: "lte",
+    };
+
+    const formattedFilters = (params?.filters || []).map(f => {
+        const mappedOp = operatorMap[f.operator] || f.operator;
+        if (mappedOp === "in") {
+            return {
+                column: f.column,
+                operator: mappedOp,
+                values: f.value.split(",").map((v: string) => v.trim()).filter(Boolean)
+            };
+        }
+        return {
+            column: f.column,
+            operator: mappedOp,
+            value: f.value
+        };
+    });
 
     const hasDateRange = !!(fromDate || toDate);
 
     const payload = params ? {
         columns: params.columns,
+        filters: formattedFilters,
+        page: params.page,
+        pageSize: params.pageSize,
         ...(hasDateRange ? {
             dateRange: {
                 column: params.dateField,
                 from: fromDate,
                 to: toDate,
-            },
-            date_field: params.dateField,
-            dateField: params.dateField,
-            start_date: params.startDate,
-            startDate: params.startDate,
-            end_date: params.endDate,
-            endDate: params.endDate,
+            }
         } : {}),
-        filters: formattedFilters,
-        page: params.page,
-        pageSize: params.pageSize,
-
-        // Backward compatibility:
-        ...(params.search !== undefined ? { search: params.search } : {}),
-        page_size: params.pageSize,
-        pageSize_compat: params.pageSize,
-        limit: params.pageSize,
-        offset: params.page && params.pageSize ? (params.page - 1) * params.pageSize : 0,
+        ...(params.search ? { search: params.search } : {})
     } : {};
 
     const response = await apiClient.post<FeedbackReportDataResponse>(
@@ -359,40 +374,45 @@ export async function generateActionsReport(
     const fromDate = params?.startDate ? (params.startDate.includes("T") ? params.startDate.split("T")[0] : params.startDate) : undefined;
     const toDate = params?.endDate ? (params.endDate.includes("T") ? params.endDate.split("T")[0] : params.endDate) : undefined;
 
-    const formattedFilters = (params?.filters || []).map(f => ({
-        column: f.column,
-        field: f.column,
-        operator: f.operator,
-        value: f.value
-    }));
+    const operatorMap: Record<string, string> = {
+        equals: "eq",
+        contains: "like",
+        in_list: "in",
+        greater_than_or_equal: "gte",
+        less_than_or_equal: "lte",
+    };
+
+    const formattedFilters = (params?.filters || []).map(f => {
+        const mappedOp = operatorMap[f.operator] || f.operator;
+        if (mappedOp === "in") {
+            return {
+                column: f.column,
+                operator: mappedOp,
+                values: f.value.split(",").map((v: string) => v.trim()).filter(Boolean)
+            };
+        }
+        return {
+            column: f.column,
+            operator: mappedOp,
+            value: f.value
+        };
+    });
 
     const hasDateRange = !!(fromDate || toDate);
 
     const payload = params ? {
         columns: params.columns,
+        filters: formattedFilters,
+        page: params.page,
+        pageSize: params.pageSize,
         ...(hasDateRange ? {
             dateRange: {
                 column: params.dateField,
                 from: fromDate,
                 to: toDate,
-            },
-            date_field: params.dateField,
-            dateField: params.dateField,
-            start_date: params.startDate,
-            startDate: params.startDate,
-            end_date: params.endDate,
-            endDate: params.endDate,
+            }
         } : {}),
-        filters: formattedFilters,
-        page: params.page,
-        pageSize: params.pageSize,
-
-        // Backward compatibility:
-        ...(params.search !== undefined ? { search: params.search } : {}),
-        page_size: params.pageSize,
-        pageSize_compat: params.pageSize,
-        limit: params.pageSize,
-        offset: params.page && params.pageSize ? (params.page - 1) * params.pageSize : 0,
+        ...(params.search ? { search: params.search } : {})
     } : {};
 
     const response = await apiClient.post<ActionsReportDataResponse>(
@@ -496,40 +516,45 @@ export async function generateCouponsReport(
     const fromDate = params?.startDate ? (params.startDate.includes("T") ? params.startDate.split("T")[0] : params.startDate) : undefined;
     const toDate = params?.endDate ? (params.endDate.includes("T") ? params.endDate.split("T")[0] : params.endDate) : undefined;
 
-    const formattedFilters = (params?.filters || []).map(f => ({
-        column: f.column,
-        field: f.column,
-        operator: f.operator,
-        value: f.value
-    }));
+    const operatorMap: Record<string, string> = {
+        equals: "eq",
+        contains: "like",
+        in_list: "in",
+        greater_than_or_equal: "gte",
+        less_than_or_equal: "lte",
+    };
+
+    const formattedFilters = (params?.filters || []).map(f => {
+        const mappedOp = operatorMap[f.operator] || f.operator;
+        if (mappedOp === "in") {
+            return {
+                column: f.column,
+                operator: mappedOp,
+                values: f.value.split(",").map((v: string) => v.trim()).filter(Boolean)
+            };
+        }
+        return {
+            column: f.column,
+            operator: mappedOp,
+            value: f.value
+        };
+    });
 
     const hasDateRange = !!(fromDate || toDate);
 
     const payload = params ? {
         columns: params.columns,
+        filters: formattedFilters,
+        page: params.page,
+        pageSize: params.pageSize,
         ...(hasDateRange ? {
             dateRange: {
                 column: params.dateField,
                 from: fromDate,
                 to: toDate,
-            },
-            date_field: params.dateField,
-            dateField: params.dateField,
-            start_date: params.startDate,
-            startDate: params.startDate,
-            end_date: params.endDate,
-            endDate: params.endDate,
+            }
         } : {}),
-        filters: formattedFilters,
-        page: params.page,
-        pageSize: params.pageSize,
-
-        // Backward compatibility:
-        ...(params.search !== undefined ? { search: params.search } : {}),
-        page_size: params.pageSize,
-        pageSize_compat: params.pageSize,
-        limit: params.pageSize,
-        offset: params.page && params.pageSize ? (params.page - 1) * params.pageSize : 0,
+        ...(params.search ? { search: params.search } : {})
     } : {};
 
     const response = await apiClient.post<CouponsReportDataResponse>(
