@@ -36,16 +36,27 @@ jobs:
       - name: Remove API routes (incompatible with static export)
         run: rm -rf src/app/api
 
-      - name: Add generateStaticParams to all dynamic route pages
+      - name: Fix dynamic routes for static export
         run: |
           find src/app -path "*/\[*\]/page.tsx" | while read file; do
-            if ! grep -q "generateStaticParams" "$file"; then
+            dir=$(dirname "$file")
+            if grep -q '"use client"' "$file"; then
+              # Client component: rename it and create a server wrapper
+              mv "$file" "${dir}/_PageContent.tsx"
+              cat > "$file" << 'EOF'
+import PageContent from "./_PageContent";
+export const generateStaticParams = () => [];
+export default function Page(props: any) {
+  return <PageContent {...props} />;
+}
+EOF
+              echo "Wrapped (client): $file"
+            elif ! grep -q "generateStaticParams" "$file"; then
               echo "" >> "$file"
               echo "export const generateStaticParams = () => [];" >> "$file"
+              echo "Patched (server): $file"
             fi
           done
-          echo "Patched dynamic routes:"
-          find src/app -path "*/\[*\]/page.tsx"
 
       - name: Build
         run: npm run build
